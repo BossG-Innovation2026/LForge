@@ -14,7 +14,7 @@ const MAX_TOTAL_SOURCES = 20;
 const MAX_IMAGES_PER_NOTEBOOK = 10;
 const MAX_IMAGE_DATAURL_CHARS = 900_000; // ~650KB binary
 
-const TEXT_KINDS: SourceKind[] = ["pdf", "docx", "pptx"];
+const TEXT_KINDS: SourceKind[] = ["pdf", "docx", "pptx", "txt", "html"];
 
 interface IncomingSource {
   name?: unknown;
@@ -25,7 +25,7 @@ interface IncomingSource {
 
 /**
  * Add sources prepared in the browser.
- * Body: { sources: [{ name, kind: "pdf"|"docx"|"pptx"|"image", text?, dataUrl? }] }
+ * Body: { sources: [{ name, kind: "pdf"|"docx"|"pptx"|"txt"|"html"|"image", text?, dataUrl? }] }
  */
 export async function POST(request: NextRequest, ctx: Ctx) {
   try {

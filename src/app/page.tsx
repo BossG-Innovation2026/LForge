@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listNotebooks } from "@/lib/store";
-import NewNotebookForm from "@/components/new-notebook-form";
+import CreateNotebookButton from "@/components/create-notebook-button";
 import DeleteNotebookButton from "@/components/delete-notebook-button";
 
 export const dynamic = "force-dynamic";
@@ -32,11 +32,19 @@ export default async function HomePage() {
         </p>
       </header>
 
-      <section className="lf-panel lf-frame relative mb-12 p-6">
+      <section className="lf-panel lf-frame relative mb-12 p-8">
         <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00ff9c]/60">
-          &gt; Start a new lesson plan
+          &gt; Welcome
         </h2>
-        <NewNotebookForm />
+        <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
+          Forge grounded, classroom-ready DepEd lesson plans from your own sources.
+          Set your learning competency, add references — files or web links — and
+          LessonForge drafts every section of the official DO 3 s.2026 format for
+          you to review, refine, and approve before export.
+        </p>
+        <div className="mt-5">
+          <CreateNotebookButton />
+        </div>
       </section>
 
       <section>

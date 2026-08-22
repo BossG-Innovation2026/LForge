@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Notebook, NotebookSummary } from "./types";
 import {
-  DEFAULT_AI_DECLARATION,
   OFFICIAL_TEMPLATE_FILE_NAME,
   officialTemplateSections,
 } from "./official-template";
@@ -65,7 +64,7 @@ export async function createNotebook(title: string): Promise<Notebook> {
       fileName: "DepEd Lesson Plan Format (DO 3 s.2026)",
       sections: officialTemplateSections(),
     },
-    details: { aiDeclaration: DEFAULT_AI_DECLARATION },
+    details: {},
     result: null,
   };
   await saveNotebook(notebook);
@@ -91,10 +90,6 @@ export async function getNotebook(id: string): Promise<Notebook | null> {
     }
     if (!Array.isArray(notebook.sources)) {
       notebook.sources = [];
-      healed = true;
-    }
-    if (!notebook.details?.aiDeclaration) {
-      notebook.details = { aiDeclaration: DEFAULT_AI_DECLARATION, ...notebook.details };
       healed = true;
     }
     if (healed) await saveNotebook(notebook);

@@ -1,4 +1,11 @@
-export type SourceKind = "pdf" | "docx" | "pptx" | "image" | "web";
+export type SourceKind =
+  | "pdf"
+  | "docx"
+  | "pptx"
+  | "txt"
+  | "html"
+  | "image"
+  | "web";
 
 export interface SourceDoc {
   id: string;
@@ -47,8 +54,6 @@ export interface NotebookDetails {
   gradeSection?: string;
   sessions?: string;
   date?: string;
-  references?: string;
-  aiDeclaration?: string;
 }
 
 export interface Notebook {

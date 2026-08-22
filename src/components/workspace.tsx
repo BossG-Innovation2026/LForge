@@ -2,11 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
-import { extractText } from "@/lib/client-extract";
-import { DEFAULT_AI_DECLARATION } from "@/lib/official-template";
-
-const ACCEPTED =
-  ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+import { extractText, SOURCE_ACCEPT } from "@/lib/client-extract";
 
 const COMPETENCY_SECTION_ID = "sec-1";
 
@@ -168,10 +164,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
 
-  const [details, setDetails] = useState<NotebookDetails>({
-    aiDeclaration: DEFAULT_AI_DECLARATION,
-    ...initialNotebook.details,
-  });
+  const [details, setDetails] = useState<NotebookDetails>(
+    initialNotebook.details ?? {}
+  );
   const [detailsSaved, setDetailsSaved] = useState(false);
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
@@ -270,8 +265,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       teachers: details.teachers ?? "",
       gradeSection: details.gradeSection ?? "",
       sessions: details.sessions ?? "",
-      references: details.references ?? "",
-      aiDeclaration: details.aiDeclaration ?? "",
     });
   }
 
@@ -483,7 +476,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             ref={sourceInputRef}
             type="file"
             multiple
-            accept={ACCEPTED}
+            accept={SOURCE_ACCEPT}
             className="hidden"
             onChange={(e) => handleSourceUpload(e.target.files)}
           />
@@ -513,7 +506,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </ul>
           ) : (
             <p className="rounded-none border border-dashed border-[#00ff9c]/20 bg-transparent px-3 py-4 text-center text-xs text-zinc-500">
-              Add PDF or DOCX files to ground the lesson plan.
+              Add reference files to ground the lesson plan: PDF, DOCX, PPTX,
+              TXT, HTML, or images.
             </p>
           )}
         </section>
@@ -611,22 +605,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
               placeholder="e.g. 4"
               maxLength={200}
-            />
-            <DetailInput
-              label="References"
-              value={details.references ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, references: v }))}
-              placeholder="Books, websites, toolkits…"
-              maxLength={2000}
-              multiline
-            />
-            <DetailInput
-              label="Declaration of AI use"
-              value={details.aiDeclaration ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, aiDeclaration: v }))}
-              placeholder=""
-              maxLength={4000}
-              multiline
             />
             <button
               onClick={saveDetails}
