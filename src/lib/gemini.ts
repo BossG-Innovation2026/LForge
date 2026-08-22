@@ -1,0 +1,314 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import type { Schema } from "@google/genai";
+import type { PlanSection, SourceDoc, TemplateSection } from "./types";
+
+const MODEL = "gemini-2.5-flash";
+
+let cachedClient: GoogleGenAI | null = null;
+
+function getClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is not set. Add it to .env.local in the project root (get a free key at https://aistudio.google.com)."
+    );
+  }
+  if (!cachedClient) {
+    cachedClient = new GoogleGenAI({ apiKey });
+  }
+  return cachedClient;
+}
+
+const SYSTEM_INSTRUCTION = `You are LessonForge, an expert curriculum designer who writes practical, classroom-ready lesson plans.
+
+Core rules:
+1. Ground every substantive claim, fact, date, definition or example STRICTLY in the provided sources. Never invent facts, page numbers, URLs, statistics or quotations.
+2. If a template section cannot be meaningfully filled from the sources (for example "homework" when sources say nothing about practice tasks), still write that section using sound pedagogy, but do not fabricate source content. You may leave a short bracketed note like "[Add specific exercise from textbook]" where the teacher must insert material.
+3. Write for teachers: concrete activities, timings, questions to ask, misconceptions to watch for.
+4. Content must be plain text. Use "- " for bullets and "1." for numbered steps. Do NOT use markdown headings, bold/italic markers, tables or code blocks inside section content.
+5. Keep each section proportional to its guidance: short guidance -> 2-4 sentences; detailed guidance -> structured bullets/steps.`;
+
+function sourceBlock(sources: SourceDoc[]): string {
+  return sources
+    .map((s, i) => `[S${i + 1}] ${s.name}\n${s.text}`)
+    .join("\n\n---\n\n");
+}
+
+function refIds(sources: SourceDoc[]): string[] {
+  return sources.map((_, i) => `S${i + 1}`);
+}
+
+async function generateJson(prompt: string, schema: Schema): Promise<unknown> {
+  const client = getClient();
+  const response = await client.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: {
+      systemInstruction: SYSTEM_INSTRUCTION,
+      temperature: 0.6,
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  });
+  const text = response.text;
+  if (!text) {
+    throw new Error("The model returned an empty response. Please try again.");
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Could not parse the model response. Please try again.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Template parsing                                                    */
+/* ------------------------------------------------------------------ */
+
+const TEMPLATE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING },
+      guidance: { type: Type.STRING },
+    },
+    required: ["title", "guidance"],
+    propertyOrdering: ["title", "guidance"],
+  },
+};
+
+interface RawTemplateSection {
+  title?: unknown;
+  guidance?: unknown;
+}
+
+export async function parseTemplateStructure(
+  rawText: string,
+  fileName: string
+): Promise<TemplateSection[]> {
+  const prompt = `The following text was extracted from a lesson plan template document ("${fileName}").
+
+TEMPLATE TEXT:
+"""
+${rawText.slice(0, 60_000)}
+"""
+
+TASK:
+Identify the ordered list of sections this lesson plan template expects. For each section:
+- "title": the exact section name from the template (e.g. "Learning Objectives", "Starter Activity").
+- "guidance": one to three sentences telling the AI what belongs in this section and how long/detailed it should be. Include any instructions found in the template (e.g. "must include differentiation", "5 minutes").
+
+Ignore headers, footers, school logos, form fields and repeated boilerplate. Return between 3 and 20 sections. If the document is not recognisable as a lesson plan template, return your best interpretation of its main sections anyway.`;
+
+  const parsed = (await generateJson(prompt, TEMPLATE_SCHEMA)) as RawTemplateSection[];
+  if (!Array.isArray(parsed)) {
+    throw new Error("Unexpected template structure response.");
+  }
+
+  const seen = new Set<string>();
+  const sections: TemplateSection[] = [];
+  let n = 0;
+  for (const item of parsed) {
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    if (!title) continue;
+    const key = title.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    n += 1;
+    sections.push({
+      id: `sec-${n}`,
+      title,
+      guidance:
+        typeof item.guidance === "string" ? item.guidance.trim() : "",
+    });
+    if (sections.length >= 20) break;
+  }
+  if (sections.length === 0) {
+    throw new Error(
+      `No sections could be detected in "${fileName}". Try a clearer template, or add sections manually.`
+    );
+  }
+  return sections;
+}
+
+/* ------------------------------------------------------------------ */
+/* Plan generation                                                     */
+/* ------------------------------------------------------------------ */
+
+const SECTION_PROPERTIES = {
+  sectionId: { type: Type.STRING },
+  title: { type: Type.STRING },
+  content: { type: Type.STRING },
+  sourceRefs: { type: Type.ARRAY, items: { type: Type.STRING } },
+};
+
+const FULL_PLAN_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    sections: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: SECTION_PROPERTIES,
+        required: ["sectionId", "title", "content", "sourceRefs"],
+        propertyOrdering: ["sectionId", "title", "content", "sourceRefs"],
+      },
+    },
+  },
+    required: ["sections"],
+};
+
+const SINGLE_SECTION_SCHEMA = {
+  type: Type.OBJECT,
+  properties: SECTION_PROPERTIES,
+  required: ["sectionId", "title", "content", "sourceRefs"],
+};
+
+interface FullPlanArgs {
+  sources: SourceDoc[];
+  sections: TemplateSection[];
+  instructions?: string;
+}
+
+export async function generateFullPlan({
+  sources,
+  sections,
+  instructions,
+}: FullPlanArgs): Promise<PlanSection[]> {
+  const refs = refIds(sources);
+  const prompt = `${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+## LESSON PLAN TEMPLATE
+${sections
+  .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
+  .join("\n")}
+## TASK
+Write the content for EVERY section listed above.
+- sectionId must be exactly the id in angle brackets (e.g. sec-1).
+- title should normally match the template title.
+- content: the fully written section (plain text, "- " bullets allowed).
+- sourceRefs: list which sources you actually used, e.g. ["S1","S2"]. Use [] only if none apply.${
+    instructions ? `\n\nADDITIONAL TEACHER INSTRUCTIONS (highest priority):\n${instructions}` : ""
+  }`;
+
+  const data = (await generateJson(prompt, FULL_PLAN_SCHEMA)) as {
+    sections?: Array<{
+      sectionId?: unknown;
+      title?: unknown;
+      content?: unknown;
+      sourceRefs?: unknown;
+    }>;
+  };
+
+  const byId = new Map<string, PlanSection>();
+  for (const s of data.sections ?? []) {
+    if (
+      typeof s.sectionId === "string" &&
+      typeof s.content === "string" &&
+      !byId.has(s.sectionId)
+    ) {
+      byId.set(s.sectionId, {
+        sectionId: s.sectionId,
+        title:
+          typeof s.title === "string" && s.title.trim()
+            ? s.title.trim()
+            : sections.find((t) => t.id === s.sectionId)?.title ?? s.sectionId,
+        content: s.content.trim(),
+        sourceRefs: sanitizeRefs(s.sourceRefs, refs),
+      });
+    }
+  }
+
+  // Fill any sections the model skipped with targeted single-section calls.
+  const result: PlanSection[] = [];
+  for (const section of sections) {
+    const existing = byId.get(section.id);
+    if (existing && existing.content.length > 0) {
+      result.push(existing);
+    } else {
+      result.push(
+        await generateSingleSection({ sources, sections, targetSectionId: section.id, instructions })
+      );
+    }
+  }
+  return result;
+}
+
+interface SingleSectionArgs {
+  sources: SourceDoc[];
+  sections: TemplateSection[];
+  targetSectionId: string;
+  instructions?: string;
+  feedback?: string;
+  previousContent?: string;
+}
+
+function sanitizeRefs(refs: unknown, valid: string[]): string[] {
+  if (!Array.isArray(refs)) return [];
+  const out = refs.filter((r): r is string => typeof r === "string" && valid.includes(r));
+  return [...new Set(out)];
+}
+
+export async function generateSingleSection({
+  sources,
+  sections,
+  targetSectionId,
+  instructions,
+  feedback,
+  previousContent,
+}: SingleSectionArgs): Promise<PlanSection> {
+  const target = sections.find((s) => s.id === targetSectionId);
+  if (!target) {
+    throw new Error(`Unknown section "${targetSectionId}".`);
+  }
+  const refs = refIds(sources);
+  const others = sections.filter((s) => s.id !== targetSectionId);
+
+  const prompt = `${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+## LESSON PLAN OUTLINE (other sections, for context)
+${others.map((s) => `- ${s.title}`).join("\n") || "(none)"}
+
+## SECTION TO WRITE
+id: ${target.id}
+title: ${target.title}
+guidance: ${target.guidance || "(none)"}
+
+## TASK
+Write ONLY this section of the lesson plan.
+Return an object with:
+- sectionId: "${target.id}"
+- title: the section title
+- content: the fully written section (plain text, "- " bullets allowed)
+- sourceRefs: which sources you used, e.g. ["S1"]. Use [] if none apply.
+Stay consistent with the other section titles listed above.${
+    previousContent && feedback
+      ? `\n\nPREVIOUS VERSION OF THIS SECTION:\n"""\n${previousContent}\n"""\n\nREVISION REQUEST FROM THE TEACHER (highest priority):\n${feedback}`
+      : ""
+  }${
+    instructions && !(previousContent && feedback)
+      ? `\n\nADDITIONAL TEACHER INSTRUCTIONS (highest priority):\n${instructions}`
+      : ""
+  }`;
+
+  const data = (await generateJson(prompt, SINGLE_SECTION_SCHEMA)) as {
+    sectionId?: unknown;
+    title?: unknown;
+    content?: unknown;
+    sourceRefs?: unknown;
+  };
+
+  const content = typeof data.content === "string" ? data.content.trim() : "";
+  if (!content) {
+    throw new Error(`The model returned no content for "${target.title}". Please try again.`);
+  }
+  return {
+    sectionId: target.id,
+    title:
+      typeof data.title === "string" && data.title.trim()
+        ? data.title.trim()
+        : target.title,
+    content,
+    sourceRefs: sanitizeRefs(data.sourceRefs, refs),
+  };
+}
