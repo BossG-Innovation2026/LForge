@@ -25,6 +25,7 @@ export interface PlanSection {
   title: string;
   content: string;
   sourceRefs: string[];
+  approvedAt?: string;
 }
 
 export interface PlanResult {

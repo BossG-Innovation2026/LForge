@@ -259,6 +259,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   /* ---------------- generation ---------------- */
 
   async function generateAll() {
+    if (approvedCount > 0 && !confirm("Regenerating will replace the plan and clear all approvals. Continue?")) {
+      return;
+    }
     setBusy("generate");
     setError(null);
     setFeedbackFor(null);
@@ -290,6 +293,28 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           feedback: useFeedback ? feedbackText : undefined,
         }),
       });
+      setNb(data.notebook);
+      setFeedbackFor(null);
+      setFeedbackText("");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setSectionBusy(null);
+    }
+  }
+
+  async function approveSection(sectionId: string) {
+    setSectionBusy(sectionId);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId }),
+        }
+      );
       setNb(data.notebook);
       setFeedbackFor(null);
       setFeedbackText("");
@@ -358,6 +383,15 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     if (!m) return undefined;
     return nb.sources[Number(m[1]) - 1]?.name;
   };
+
+  const approvedIds = new Set(
+    (nb.result?.sections ?? []).filter((s) => s.approvedAt).map((s) => s.sectionId)
+  );
+  const totalSections = nb.template?.sections.length ?? nb.result?.sections.length ?? 0;
+  const approvedCount = nb.template
+    ? nb.template.sections.filter((t) => approvedIds.has(t.id)).length
+    : approvedIds.size;
+  const allApproved = totalSections > 0 && approvedCount === totalSections;
 
   const canGenerate =
     nb.template !== null &&
@@ -618,13 +652,29 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               className="w-full rounded-lg border border-transparent px-2 py-1.5 text-xl font-bold text-slate-900 outline-none transition hover:border-slate-200 focus:border-indigo-400"
               aria-label="Lesson plan title"
             />
-            <button
-              onClick={exportDocx}
-              disabled={!nb.result || busy !== null}
-              className="shrink-0 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {busy === "export" ? "Preparing…" : "Export DOCX"}
-            </button>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <button
+                onClick={exportDocx}
+                disabled={!nb.result || !allApproved || busy !== null}
+                title={
+                  nb.result && !allApproved
+                    ? `${approvedCount} of ${totalSections} sections approved`
+                    : undefined
+                }
+                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  allApproved
+                    ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                    : "border border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-600"
+                }`}
+              >
+                {busy === "export" ? "Preparing…" : allApproved ? "Download final lesson plan" : "Export DOCX"}
+              </button>
+              {nb.result && !allApproved && (
+                <span className="text-[11px] text-slate-400">
+                  {approvedCount} of {totalSections} approved
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Generate bar */}
@@ -675,42 +725,93 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </div>
           ) : (
             <div className="space-y-4 pb-16">
-              <p className="text-xs text-slate-400">
-                Generated {new Date(nb.result.generatedAt).toLocaleString()} · grounded in{" "}
-                {hasSources
-                  ? `${nb.sources.length} source${nb.sources.length === 1 ? "" : "s"}`
-                  : "pedagogy only"}
-              </p>
-              {nb.result.sections.map((section) => (
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-slate-400">
+                  Generated {new Date(nb.result.generatedAt).toLocaleString()} · grounded in{" "}
+                  {hasSources
+                    ? `${nb.sources.length} source${nb.sources.length === 1 ? "" : "s"}`
+                    : "pedagogy only"}
+                </p>
+                <p className="shrink-0 text-xs font-medium text-slate-500">
+                  {approvedCount} of {totalSections} approved
+                </p>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={totalSections}
+                aria-valuenow={approvedCount}
+                className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200"
+              >
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    allApproved ? "bg-emerald-500" : "bg-indigo-500"
+                  }`}
+                  style={{ width: `${totalSections ? (approvedCount / totalSections) * 100 : 0}%` }}
+                />
+              </div>
+              {nb.result.sections.map((section) => {
+                const isApproved = Boolean(section.approvedAt);
+                return (
                 <article
                   key={section.sectionId}
-                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className={`rounded-xl border bg-white p-5 shadow-sm transition-colors ${
+                    isApproved ? "border-emerald-300" : "border-slate-200"
+                  }`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <h2 className="font-semibold text-slate-900">{section.title}</h2>
                     <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setFeedbackFor(
-                            feedbackFor === section.sectionId ? null : section.sectionId
-                          );
-                          setFeedbackText("");
-                        }}
-                        disabled={generating}
-                        className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600 disabled:opacity-40"
-                      >
-                        Refine
-                      </button>
-                      <button
-                        onClick={() => regenerateSection(section.sectionId, false)}
-                        disabled={generating}
-                        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-40"
-                      >
-                        {sectionBusy === section.sectionId ? (
-                          <Spinner className="h-3 w-3" />
-                        ) : null}
-                        Regenerate
-                      </button>
+                      {isApproved ? (
+                        <>
+                          <span className="rounded-md bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                            Approved ✓
+                          </span>
+                          <button
+                            onClick={() => approveSection(section.sectionId)}
+                            disabled={generating}
+                            title="Allow editing this section again"
+                            className="rounded-md px-2 py-1 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40"
+                          >
+                            Un-approve
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setFeedbackFor(
+                                feedbackFor === section.sectionId ? null : section.sectionId
+                              );
+                              setFeedbackText("");
+                            }}
+                            disabled={generating}
+                            className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600 disabled:opacity-40"
+                          >
+                            Refine
+                          </button>
+                          <button
+                            onClick={() => regenerateSection(section.sectionId, false)}
+                            disabled={generating}
+                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-40"
+                          >
+                            {sectionBusy === section.sectionId ? (
+                              <Spinner className="h-3 w-3" />
+                            ) : null}
+                            Regenerate
+                          </button>
+                          <button
+                            onClick={() => approveSection(section.sectionId)}
+                            disabled={generating || busy !== null}
+                            className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:opacity-40"
+                          >
+                            {sectionBusy === section.sectionId ? (
+                              <Spinner className="h-3 w-3" />
+                            ) : null}
+                            Approve
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -765,7 +866,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     </div>
                   )}
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

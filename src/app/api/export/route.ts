@@ -19,6 +19,27 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!notebook.template) {
+      return NextResponse.json(
+        { error: "Upload a template before exporting." },
+        { status: 400 }
+      );
+    }
+
+    const approvedIds = new Set(
+      notebook.result.sections
+        .filter((s) => s.approvedAt)
+        .map((s) => s.sectionId)
+    );
+    const missing = notebook.template.sections.filter((t) => !approvedIds.has(t.id));
+    if (missing.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Approve all sections before exporting. ${missing.length} of ${notebook.template.sections.length} still pending.`,
+        },
+        { status: 400 }
+      );
+    }
 
     const buffer = await buildLessonDocx(notebook);
     return new NextResponse(new Uint8Array(buffer), {

@@ -67,12 +67,28 @@ export async function buildLessonDocx(notebook: Notebook): Promise<Buffer> {
           notebook.result.generatedAt
         ).toLocaleString()}`,
         run: { italics: true, size: 18 },
+        spacing: { after: 40 },
+      })
+    );
+    children.push(
+      new Paragraph({
+        text: "All sections reviewed and approved",
+        run: { italics: true, size: 18 },
         spacing: { after: 240 },
       })
     );
   }
 
-  for (const section of notebook.result?.sections ?? []) {
+  const bySectionId = new Map(
+    (notebook.result?.sections ?? []).map((s) => [s.sectionId, s])
+  );
+  const ordered = notebook.template
+    ? notebook.template.sections
+        .map((t) => bySectionId.get(t.id))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s) && Boolean(s!.approvedAt))
+    : [];
+
+  for (const section of ordered) {
     children.push(
       new Paragraph({
         text: section.title,
