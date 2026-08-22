@@ -2,8 +2,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { Schema } from "@google/genai";
 import type { PlanSection, SourceDoc, TemplateSection } from "./types";
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.6-flash";
 
+let cachedKey: string | null = null;
 let cachedClient: GoogleGenAI | null = null;
 
 function getClient(): GoogleGenAI {
@@ -13,8 +14,9 @@ function getClient(): GoogleGenAI {
       "GEMINI_API_KEY is not set. Add it to .env.local in the project root (get a free key at https://aistudio.google.com)."
     );
   }
-  if (!cachedClient) {
+  if (!cachedClient || cachedKey !== apiKey) {
     cachedClient = new GoogleGenAI({ apiKey });
+    cachedKey = apiKey;
   }
   return cachedClient;
 }
@@ -48,7 +50,6 @@ async function generateJson(prompt: string, schema: Schema): Promise<unknown> {
       temperature: 0.6,
       responseMimeType: "application/json",
       responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 },
     },
   });
   const text = response.text;
