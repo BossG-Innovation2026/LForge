@@ -17,10 +17,10 @@ export default async function NotebookPage({
   }
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b border-slate-200 bg-white px-4 py-2.5">
+      <header className="border-b border-[#00ff9c]/15 bg-black/40 px-4 py-2.5">
         <Link
           href="/"
-          className="text-sm font-medium text-slate-500 transition hover:text-indigo-600"
+          className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-400 transition hover:text-[#00ff9c]"
         >
           ← All lesson plans
         </Link>

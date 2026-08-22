@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Notebook, NotebookSummary } from "./types";
-import { DEFAULT_AI_DECLARATION, officialTemplateSections } from "./official-template";
+import {
+  DEFAULT_AI_DECLARATION,
+  OFFICIAL_TEMPLATE_FILE_NAME,
+  officialTemplateSections,
+} from "./official-template";
 
 const KEY_PREFIX = "notebook:";
 
@@ -73,7 +77,28 @@ export async function getNotebook(id: string): Promise<Notebook | null> {
   try {
     const store = await kv();
     const raw = await store.get(keyFor(id));
-    return raw ? (JSON.parse(raw) as Notebook) : null;
+    if (!raw) return null;
+    const notebook = JSON.parse(raw) as Notebook;
+
+    // Self-heal records created before the official-format migration.
+    let healed = false;
+    if (!notebook.template || notebook.template.sections.length === 0) {
+      notebook.template = {
+        fileName: OFFICIAL_TEMPLATE_FILE_NAME,
+        sections: officialTemplateSections(),
+      };
+      healed = true;
+    }
+    if (!Array.isArray(notebook.sources)) {
+      notebook.sources = [];
+      healed = true;
+    }
+    if (!notebook.details?.aiDeclaration) {
+      notebook.details = { aiDeclaration: DEFAULT_AI_DECLARATION, ...notebook.details };
+      healed = true;
+    }
+    if (healed) await saveNotebook(notebook);
+    return notebook;
   } catch {
     return null;
   }

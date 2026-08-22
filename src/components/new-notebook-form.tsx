@@ -43,14 +43,18 @@ export default function NewNotebookForm() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Lesson plan topic, e.g. Photosynthesis - Grade 7"
           maxLength={200}
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="lf-input !text-sm"
         />
-        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+        {error && (
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-red-400">
+            {error}
+          </p>
+        )}
       </div>
       <button
         type="submit"
         disabled={creating}
-        className="shrink-0 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
+        className="shrink-0 rounded-none bg-[#00ff9c] px-5 py-2.5 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_18px_rgba(0,255,156,0.25)] transition hover:bg-[#5cffbe] disabled:opacity-50"
       >
         {creating ? "Creating…" : "New lesson plan"}
       </button>

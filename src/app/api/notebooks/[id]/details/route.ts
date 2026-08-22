@@ -30,6 +30,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
     }
 
     const details: NotebookDetails = {
+      competency: clean(body.competency, MAX_FIELD),
       learningArea: clean(body.learningArea, MAX_FIELD),
       teachers: clean(body.teachers, MAX_FIELD),
       gradeSection: clean(body.gradeSection, MAX_FIELD),

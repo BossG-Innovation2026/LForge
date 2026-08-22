@@ -30,17 +30,21 @@ export async function POST(request: NextRequest) {
     }
     if (!notebook.template) {
       return NextResponse.json(
-        { error: "Upload a template before exporting." },
+        { error: "Lesson format is unavailable." },
         { status: 400 }
       );
     }
 
+    // The competency section is teacher-authored; approval is implied once set.
+    const competencySet = Boolean(notebook.details?.competency?.trim());
     const approvedIds = new Set(
       notebook.result.sections
         .filter((s) => s.approvedAt)
         .map((s) => s.sectionId)
     );
-    const missing = notebook.template.sections.filter((t) => !approvedIds.has(t.id));
+    const missing = notebook.template.sections.filter(
+      (t) => !approvedIds.has(t.id) && !(competencySet && t.id === "sec-1")
+    );
     if (missing.length > 0) {
       return NextResponse.json(
         {

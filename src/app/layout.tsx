@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LessonForge - AI lesson plan generator",
   description:
-    "Upload sources and a lesson template, and generate a grounded, classroom-ready lesson plan.",
+    "Set your competency standards, add sources, and generate a grounded, classroom-ready DepEd lesson plan.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

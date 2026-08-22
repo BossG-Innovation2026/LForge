@@ -21,7 +21,7 @@ export default function DeleteNotebookButton({ id }: { id: string }) {
       onClick={handleDelete}
       disabled={deleting || pending}
       aria-label="Delete lesson plan"
-      className="rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+      className="rounded-none border border-transparent px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-zinc-500 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
     >
       {deleting || pending ? "…" : "Delete"}
     </button>

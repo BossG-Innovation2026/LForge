@@ -35,6 +35,7 @@ export interface PlanResult {
 }
 
 export interface NotebookDetails {
+  competency?: string;
   learningArea?: string;
   teachers?: string;
   gradeSection?: string;

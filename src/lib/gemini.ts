@@ -40,6 +40,11 @@ function refIds(sources: SourceDoc[]): string[] {
   return sources.map((_, i) => `S${i + 1}`);
 }
 
+function standardsBlock(standards?: string): string {
+  if (!standards) return "";
+  return `\n## NON-NEGOTIABLE LEARNING COMPETENCY & CURRICULUM STANDARDS\n"""\n${standards}\n"""\nThese standards are fixed by the teacher. Every section you write MUST align with them: Learning Objectives must decompose the competency into achievable knowledge, skills and tasks; Flow, resources and assessment must serve those objectives. Do not contradict, dilute or drift beyond these standards.\n`;
+}
+
 async function generateJson(prompt: string, schema: Schema): Promise<unknown> {
   const client = getClient();
   const response = await client.models.generateContent({
@@ -100,15 +105,17 @@ interface FullPlanArgs {
   sources: SourceDoc[];
   sections: TemplateSection[];
   instructions?: string;
+  standards?: string;
 }
 
 export async function generateFullPlan({
   sources,
   sections,
   instructions,
+  standards,
 }: FullPlanArgs): Promise<PlanSection[]> {
   const refs = refIds(sources);
-  const prompt = `${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  const prompt = `${standardsBlock(standards)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
 ## LESSON PLAN TEMPLATE
 ${sections
   .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
@@ -172,6 +179,7 @@ interface SingleSectionArgs {
   instructions?: string;
   feedback?: string;
   previousContent?: string;
+  standards?: string;
 }
 
 function sanitizeRefs(refs: unknown, valid: string[]): string[] {
@@ -187,6 +195,7 @@ export async function generateSingleSection({
   instructions,
   feedback,
   previousContent,
+  standards,
 }: SingleSectionArgs): Promise<PlanSection> {
   const target = sections.find((s) => s.id === targetSectionId);
   if (!target) {
@@ -195,7 +204,7 @@ export async function generateSingleSection({
   const refs = refIds(sources);
   const others = sections.filter((s) => s.id !== targetSectionId);
 
-  const prompt = `${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  const prompt = `${standardsBlock(standards)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
 ## LESSON PLAN OUTLINE (other sections, for context)
 ${others.map((s) => `- ${s.title}`).join("\n") || "(none)"}
 
