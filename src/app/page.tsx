@@ -37,7 +37,8 @@ export default async function HomePage() {
           &gt; Welcome
         </h2>
         <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
-          Forge grounded, classroom-ready DepEd lesson plans from your own sources.
+          Forge grounded, classroom-ready DepEd lesson plans from your own
+          references.
           Set your learning competency, add references — files or web links — and
           LessonForge drafts every section of the official DO 3 s.2026 format for
           you to review, refine, and approve before export.
@@ -66,7 +67,7 @@ export default async function HomePage() {
                     </p>
                     <p className="mt-1 font-mono text-xs tracking-wide text-zinc-500">
                       Updated {formatDate(nb.updatedAt)} ·{" "}
-                      {nb.sourceCount === 1 ? "1 source" : `${nb.sourceCount} sources`}
+                      {nb.sourceCount === 1 ? "1 reference" : `${nb.sourceCount} references`}
                       {nb.hasTemplate ? " · official format" : ""}
                       {nb.hasResult ? " · plan generated" : ""}
                     </p>

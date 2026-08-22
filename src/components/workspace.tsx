@@ -151,6 +151,33 @@ function DetailInput({
   );
 }
 
+function DetailSummary({
+  label,
+  value,
+  clamp = false,
+}: {
+  label: string;
+  value?: string;
+  clamp?: boolean;
+}) {
+  const text = value?.trim();
+  return (
+    <div>
+      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-zinc-500">
+        {label}
+      </span>
+      <p
+        title={clamp && text ? text : undefined}
+        className={`text-xs leading-snug text-zinc-300 ${
+          clamp ? "line-clamp-4 whitespace-pre-line" : ""
+        }`}
+      >
+        {text || "—"}
+      </p>
+    </div>
+  );
+}
+
 export default function Workspace({ initialNotebook }: { initialNotebook: Notebook }) {
   const [nb, setNb] = useState<Notebook>(initialNotebook);
   const [title, setTitle] = useState(initialNotebook.title);
@@ -168,12 +195,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     initialNotebook.details ?? {}
   );
   const [detailsSaved, setDetailsSaved] = useState(false);
+  const [detailsEditing, setDetailsEditing] = useState(false);
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
 
   const generating = busy === "generate" || sectionBusy !== null;
   const hasSources = nb.sources.length > 0;
   const competencySet = Boolean(details.competency?.trim());
+  const showDetailsForm = !nb.result || detailsEditing;
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -288,6 +317,12 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
+  /** Discard unsaved edits and return to the generated plan view. */
+  function backToPlan(): void {
+    setDetails(nb.details ?? {});
+    setDetailsEditing(false);
+  }
+
   /* ---------------- generation ---------------- */
 
   async function generateAll() {
@@ -318,6 +353,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
         body: JSON.stringify({ notebookId: nb.id, instructions }),
       });
       setNb(data.notebook);
+      setDetails(data.notebook.details ?? {});
+      setDetailsEditing(false);
     } catch (err) {
       fail(err);
     } finally {
@@ -454,10 +491,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     <div className="flex min-h-0 w-full flex-1">
       {/* Sidebar */}
       <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r border-[#00ff9c]/15 bg-black/40 p-4">
-        {/* Sources */}
+        {/* References */}
         <section>
           <div className="mb-2 flex items-center justify-between">
-            <SectionHeading>Sources ({nb.sources.length})</SectionHeading>
+            <SectionHeading>References ({nb.sources.length})</SectionHeading>
             <button
               onClick={() => sourceInputRef.current?.click()}
               disabled={busy !== null}
@@ -541,80 +578,47 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           </div>
         </section>
 
-        {/* Lesson details */}
-        <section>
-          <div className="mb-2 flex items-center justify-between">
-            <SectionHeading>Lesson details</SectionHeading>
-            {detailsSaved && (
-              <span className="font-mono text-[11px] uppercase tracking-wider text-[#00ff9c]">
-                Saved ✓
-              </span>
-            )}
-          </div>
-
-          {/* Competency - required standard */}
-          <div className="lf-panel lf-frame relative mb-2 p-3">
-            <label className="block">
-              <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
-                Learning Competency &amp; Curriculum Standards{" "}
-                <span aria-hidden="true">*</span>
-              </span>
-              {!competencySet && (
-                <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-amber-400/90">
-                  Required - anchors every generated section
-                </span>
-              )}
-              <textarea
-                value={details.competency ?? ""}
-                onChange={(e) =>
-                  setDetails((d) => ({ ...d, competency: e.target.value }))
-                }
-                rows={4}
-                maxLength={2000}
-                placeholder={"e.g. Describe the process of photosynthesis and explain its importance to living things."}
-                className="lf-input resize-none"
+        {/* Lesson details - compact read-only summary once a plan exists */}
+        {!showDetailsForm && (
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <SectionHeading>Lesson details</SectionHeading>
+              <GhostButton
+                onClick={() => setDetailsEditing(true)}
+                disabled={busy !== null}
+              >
+                Edit
+              </GhostButton>
+            </div>
+            <div className="lf-panel space-y-2 p-3">
+              <DetailSummary
+                label="Learning Competency & Curriculum Standards"
+                value={details.competency}
+                clamp
               />
-            </label>
-          </div>
-
-          <div className="lf-panel space-y-2 p-3">
-            <DetailInput
-              label="Learning Area/s"
-              value={details.learningArea ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
-              placeholder="e.g. Science"
-              maxLength={500}
-            />
-            <DetailInput
-              label="Name of Teacher/s"
-              value={details.teachers ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
-              placeholder="Teacher name(s)"
-              maxLength={500}
-            />
-            <DetailInput
-              label="Grade Level and Section"
-              value={details.gradeSection ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
-              placeholder="e.g. Grade 7 - Sampaguita"
-              maxLength={500}
-            />
-            <DetailInput
-              label="No. of Sessions"
-              value={details.sessions ?? ""}
-              onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
-              placeholder="e.g. 4"
-              maxLength={200}
-            />
-            <button
-              onClick={saveDetails}
-              disabled={busy !== null}
-              className="w-full rounded-none bg-[#00ff9c] px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-black shadow-[0_0_16px_rgba(0,255,156,0.2)] transition hover:bg-[#5cffbe] disabled:opacity-50"
-            >
-              Save lesson details
-            </button>
-          </div>
-        </section>
+              <DetailSummary label="Learning Area/s" value={details.learningArea} />
+              <DetailSummary label="Name of Teacher/s" value={details.teachers} />
+              <DetailSummary
+                label="Grade Level and Section"
+                value={details.gradeSection}
+              />
+              <DetailSummary label="No. of Sessions" value={details.sessions} />
+              <button
+                onClick={generateAll}
+                disabled={!canGenerate}
+                className="w-full rounded-none border border-[#00ff9c]/30 bg-transparent px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-emerald-300 transition hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {busy === "generate" ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Spinner className="h-3 w-3" /> Regenerating…
+                  </span>
+                ) : (
+                  "Regenerate plan"
+                )}
+              </button>
+            </div>
+          </section>
+        )}
 
         {warnings.length > 0 && (
           <div className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3">
@@ -679,7 +683,96 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </div>
           </div>
 
+          {/* Lesson details - editable in the main window during setup */}
+          {showDetailsForm && (
+            <section className="mb-6">
+              <div className="mb-2 flex items-center justify-between">
+                <SectionHeading>Lesson details</SectionHeading>
+                <div className="flex items-center gap-3">
+                  {detailsSaved && (
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-[#00ff9c]">
+                      Saved ✓
+                    </span>
+                  )}
+                  {nb.result && (
+                    <button
+                      onClick={backToPlan}
+                      disabled={busy !== null}
+                      className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-white/5 hover:text-zinc-200 disabled:opacity-50"
+                    >
+                      ← Back to plan
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Competency - required standard */}
+              <div className="lf-panel lf-frame relative mb-2 p-3">
+                <label className="block">
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                    Learning Competency &amp; Curriculum Standards{" "}
+                    <span aria-hidden="true">*</span>
+                  </span>
+                  {!competencySet && (
+                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-amber-400/90">
+                      Required - anchors every generated section
+                    </span>
+                  )}
+                  <textarea
+                    value={details.competency ?? ""}
+                    onChange={(e) =>
+                      setDetails((d) => ({ ...d, competency: e.target.value }))
+                    }
+                    rows={4}
+                    maxLength={2000}
+                    placeholder={"e.g. Describe the process of photosynthesis and explain its importance to living things."}
+                    className="lf-input resize-none"
+                  />
+                </label>
+              </div>
+
+              <div className="lf-panel space-y-2 p-3">
+                <DetailInput
+                  label="Learning Area/s"
+                  value={details.learningArea ?? ""}
+                  onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
+                  placeholder="e.g. Science"
+                  maxLength={500}
+                />
+                <DetailInput
+                  label="Name of Teacher/s"
+                  value={details.teachers ?? ""}
+                  onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
+                  placeholder="Teacher name(s)"
+                  maxLength={500}
+                />
+                <DetailInput
+                  label="Grade Level and Section"
+                  value={details.gradeSection ?? ""}
+                  onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
+                  placeholder="e.g. Grade 7 - Sampaguita"
+                  maxLength={500}
+                />
+                <DetailInput
+                  label="No. of Sessions"
+                  value={details.sessions ?? ""}
+                  onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
+                  placeholder="e.g. 4"
+                  maxLength={200}
+                />
+                <button
+                  onClick={saveDetails}
+                  disabled={busy !== null}
+                  className="w-full rounded-none bg-[#00ff9c] px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-black shadow-[0_0_16px_rgba(0,255,156,0.2)] transition hover:bg-[#5cffbe] disabled:opacity-50"
+                >
+                  Save lesson details
+                </button>
+              </div>
+            </section>
+          )}
+
           {/* Generate bar */}
+          {showDetailsForm && (
           <div className="lf-panel lf-frame relative mb-6 p-4">
             <textarea
               value={instructions}
@@ -692,7 +785,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             <div className="mt-3 flex items-center justify-between gap-4">
               <p className="min-w-0 text-xs text-zinc-500">
                 {genBlockReason ?? (!hasSources
-                  ? "No sources yet - the plan will rely on pedagogy only."
+                  ? "No references yet - the plan will rely on pedagogy only."
                   : undefined)}
               </p>
               <button
@@ -712,6 +805,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               </button>
             </div>
           </div>
+          )}
 
           {/* Errors surface right where actions happen */}
           {error && (
@@ -730,23 +824,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           )}
 
           {/* Result */}
-          {!nb.result ? (
-            <div className="rounded-none border border-dashed border-[#00ff9c]/20 px-8 py-16 text-center">
-              <p className="font-mono text-sm uppercase tracking-widest text-zinc-400">
-                Your generated lesson plan will appear here
-              </p>
-              <p className="mt-2 font-mono text-xs tracking-wide text-zinc-600">
-                1 &gt; Set the competency &nbsp;·&nbsp; 2 &gt; Add sources &nbsp;·&nbsp; 3
-                &gt; Generate &nbsp;·&nbsp; 4 &gt; Approve each section
-              </p>
-            </div>
-          ) : (
+          {nb.result && !showDetailsForm && (
             <div className="space-y-4 pb-16">
               <div className="flex items-center justify-between gap-4">
                 <p className="font-mono text-xs tracking-wide text-zinc-500">
                   Generated {new Date(nb.result.generatedAt).toLocaleString()} · grounded in{" "}
                   {hasSources
-                    ? `${nb.sources.length} source${nb.sources.length === 1 ? "" : "s"}`
+                    ? `${nb.sources.length} reference${nb.sources.length === 1 ? "" : "s"}`
                     : "pedagogy only"}
                 </p>
                 <p className="shrink-0 font-mono text-xs uppercase tracking-wider text-zinc-400">
