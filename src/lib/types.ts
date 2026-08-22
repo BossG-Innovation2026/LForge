@@ -34,6 +34,15 @@ export interface PlanResult {
   sections: PlanSection[];
 }
 
+export interface NotebookDetails {
+  learningArea?: string;
+  teachers?: string;
+  gradeSection?: string;
+  sessions?: string;
+  references?: string;
+  aiDeclaration?: string;
+}
+
 export interface Notebook {
   id: string;
   title: string;
@@ -41,6 +50,7 @@ export interface Notebook {
   updatedAt: string;
   sources: SourceDoc[];
   template: TemplateInfo | null;
+  details?: NotebookDetails;
   result: PlanResult | null;
 }
 

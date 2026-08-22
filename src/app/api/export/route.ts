@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildLessonDocx, safeFileName } from "@/lib/export-docx";
 import { getNotebook } from "@/lib/store";
 import { jsonError } from "@/lib/http";
+import {
+  fillOfficialDocx,
+  notebookToFillFields,
+  TAGGED_TEMPLATE_PATH,
+} from "@/lib/docx-fill";
+
+function safeFileName(title: string): string {
+  const base = title.replace(/[^\w\d- ]+/g, "").trim().replace(/\s+/g, "-");
+  return `${base || "lesson-plan"}.docx`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,8 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const buffer = await buildLessonDocx(notebook);
-    return new NextResponse(new Uint8Array(buffer), {
+    const origin = new URL(request.url).origin;
+    const bytes = await fillOfficialDocx(
+      `${origin}${TAGGED_TEMPLATE_PATH}`,
+      notebookToFillFields(notebook)
+    );
+
+    return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

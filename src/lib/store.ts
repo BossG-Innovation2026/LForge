@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Notebook, NotebookSummary } from "./types";
+import { DEFAULT_AI_DECLARATION, officialTemplateSections } from "./official-template";
 
 const KEY_PREFIX = "notebook:";
 
@@ -56,7 +57,11 @@ export async function createNotebook(title: string): Promise<Notebook> {
     createdAt: now,
     updatedAt: now,
     sources: [],
-    template: null,
+    template: {
+      fileName: "DepEd Lesson Plan Format (DO 3 s.2026)",
+      sections: officialTemplateSections(),
+    },
+    details: { aiDeclaration: DEFAULT_AI_DECLARATION },
     result: null,
   };
   await saveNotebook(notebook);

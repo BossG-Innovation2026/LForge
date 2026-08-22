@@ -1,13 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { Notebook } from "@/lib/types";
+import type { Notebook, NotebookDetails } from "@/lib/types";
 import { extractText } from "@/lib/client-extract";
-
-interface DraftSection {
-  title: string;
-  guidance: string;
-}
+import { DEFAULT_AI_DECLARATION } from "@/lib/official-template";
 
 const ACCEPTED =
   ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -86,25 +82,67 @@ function ContentBody({ content }: { content: string }) {
   return <div className="space-y-2">{out}</div>;
 }
 
+function DetailInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+}) {
+  const shared =
+    "w-full rounded border border-slate-200 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400";
+  return (
+    <label className="block">
+      <span className="mb-0.5 block text-[11px] font-medium text-slate-500">{label}</span>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          maxLength={4000}
+          placeholder={placeholder}
+          className={`${shared} resize-none`}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={500}
+          placeholder={placeholder}
+          className={shared}
+        />
+      )}
+    </label>
+  );
+}
+
 export default function Workspace({ initialNotebook }: { initialNotebook: Notebook }) {
   const [nb, setNb] = useState<Notebook>(initialNotebook);
   const [title, setTitle] = useState(initialNotebook.title);
 
-  const [busy, setBusy] = useState<
-    null | "sources" | "template" | "generate" | "export"
-  >(null);
+  const [busy, setBusy] = useState<null | "sources" | "generate" | "export">(null);
   const [sectionBusy, setSectionBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
 
   const [instructions, setInstructions] = useState("");
-  const [editingTemplate, setEditingTemplate] = useState(false);
-  const [draftSections, setDraftSections] = useState<DraftSection[]>([]);
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
 
+  const [details, setDetails] = useState<NotebookDetails>({
+    aiDeclaration: DEFAULT_AI_DECLARATION,
+    ...initialNotebook.details,
+  });
+  const [detailsSaved, setDetailsSaved] = useState(false);
+
   const sourceInputRef = useRef<HTMLInputElement>(null);
-  const templateInputRef = useRef<HTMLInputElement>(null);
 
   const generating = busy === "generate" || sectionBusy !== null;
   const hasSources = nb.sources.length > 0;
@@ -190,67 +228,30 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
-  /* ---------------- template ---------------- */
+  /* ---------------- lesson details ---------------- */
 
-  async function handleTemplateUpload(file: File | null) {
-    if (!file) return;
-    setBusy("template");
-    setError(null);
-    setEditingTemplate(false);
-    try {
-      const extracted = await extractText(file);
-      const data = await apiCall<{ notebook: Notebook }>(
-        `/api/notebooks/${nb.id}/template`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileName: extracted.name, text: extracted.text }),
-        }
-      );
-      setNb(data.notebook);
-    } catch (err) {
-      fail(err);
-    } finally {
-      setBusy(null);
-      if (templateInputRef.current) templateInputRef.current.value = "";
-    }
-  }
-
-  function startEditing() {
-    if (!nb.template) return;
-    setDraftSections(
-      nb.template.sections.map((s) => ({ title: s.title, guidance: s.guidance }))
-    );
-    setEditingTemplate(true);
-  }
-
-  async function saveTemplate() {
+  async function saveDetails(): Promise<void> {
     setError(null);
     try {
       const data = await apiCall<{ notebook: Notebook }>(
-        `/api/notebooks/${nb.id}/template`,
+        `/api/notebooks/${nb.id}/details`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: nb.template?.fileName ?? "Custom template",
-            sections: draftSections,
+            learningArea: details.learningArea ?? "",
+            teachers: details.teachers ?? "",
+            gradeSection: details.gradeSection ?? "",
+            sessions: details.sessions ?? "",
+            references: details.references ?? "",
+            aiDeclaration: details.aiDeclaration ?? "",
           }),
         }
       );
       setNb(data.notebook);
-      setEditingTemplate(false);
-    } catch (err) {
-      fail(err);
-    }
-  }
-
-  async function clearTemplate() {
-    if (!confirm("Remove the template? The generated plan will be cleared.")) return;
-    setError(null);
-    try {
-      await apiCall<undefined>(`/api/notebooks/${nb.id}/template`, { method: "DELETE" });
-      await reload();
+      setDetails(data.notebook.details ?? {});
+      setDetailsSaved(true);
+      setTimeout(() => setDetailsSaved(false), 2000);
     } catch (err) {
       fail(err);
     }
@@ -397,8 +398,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     nb.template !== null &&
     nb.template.sections.length > 0 &&
     !generating &&
-    busy !== "sources" &&
-    busy !== "template";
+    busy !== "sources";
 
   return (
     <div className="flex min-h-0 w-full flex-1">
@@ -463,147 +463,85 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           )}
         </section>
 
-        {/* Template */}
+        {/* Format */}
+        <section>
+          <div className="mb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Format
+            </h2>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs font-medium text-slate-700">
+              Official DepEd Lesson Plan
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-400">DO 3 s.2026 · fixed form</p>
+            <ol className="mt-2 space-y-1 border-l-2 border-indigo-100 pl-3">
+              {nb.template?.sections.map((section) => (
+                <li key={section.id} className="text-xs leading-snug text-slate-600">
+                  {section.title}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Lesson details */}
         <section>
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Template
+              Lesson details
             </h2>
-            {!editingTemplate && nb.template && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={startEditing}
-                  disabled={busy !== null}
-                  className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => templateInputRef.current?.click()}
-                  disabled={busy !== null}
-                  className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50"
-                >
-                  Replace
-                </button>
-                <button
-                  onClick={clearTemplate}
-                  disabled={busy !== null}
-                  className="rounded-md px-2 py-1 text-xs font-medium text-slate-400 transition hover:text-red-600 disabled:opacity-50"
-                >
-                  Remove
-                </button>
-              </div>
+            {detailsSaved && (
+              <span className="text-[11px] font-medium text-emerald-600">Saved ✓</span>
             )}
           </div>
-          <input
-            ref={templateInputRef}
-            type="file"
-            accept={ACCEPTED}
-            className="hidden"
-            onChange={(e) => handleTemplateUpload(e.target.files?.[0] ?? null)}
-          />
-
-          {busy === "template" ? (
-            <p className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-3 text-xs font-medium text-indigo-700">
-              <Spinner className="h-3.5 w-3.5" /> Analyzing template…
-            </p>
-          ) : !nb.template ? (
-            <>
-              <button
-                onClick={() => templateInputRef.current?.click()}
-                disabled={busy !== null}
-                className="w-full rounded-lg border-2 border-dashed border-indigo-300 bg-white px-3 py-6 text-center text-xs text-indigo-500 transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-50"
-              >
-                <span className="block text-sm font-medium">Upload a template</span>
-                <span className="mt-1 block">PDF or DOCX with your lesson plan structure</span>
-              </button>
-            </>
-          ) : editingTemplate ? (
-            <div className="space-y-3">
-              <p className="text-xs text-slate-400">{nb.template.fileName}</p>
-              {draftSections.map((section, i) => (
-                <div key={i} className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-300">{i + 1}</span>
-                    <input
-                      value={section.title}
-                      onChange={(e) =>
-                        setDraftSections((prev) =>
-                          prev.map((d, j) =>
-                            j === i ? { ...d, title: e.target.value } : d
-                          )
-                        )
-                      }
-                      className="w-full rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-800 outline-none focus:border-indigo-400"
-                      placeholder="Section title"
-                    />
-                    <button
-                      onClick={() =>
-                        setDraftSections((prev) => prev.filter((_, j) => j !== i))
-                      }
-                      aria-label="Delete section"
-                      className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <textarea
-                    value={section.guidance}
-                    onChange={(e) =>
-                      setDraftSections((prev) =>
-                        prev.map((d, j) =>
-                          j === i ? { ...d, guidance: e.target.value } : d
-                        )
-                      )
-                    }
-                    rows={2}
-                    placeholder="What belongs here? (guidance)"
-                    className="w-full resize-none rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-indigo-400"
-                  />
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setDraftSections((prev) => [...prev, { title: "", guidance: "" }])}
-                  className="flex-1 rounded-lg border border-dashed border-slate-300 px-2 py-2 text-xs text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600"
-                >
-                  + Add section
-                </button>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={saveTemplate}
-                  disabled={busy !== null}
-                  className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
-                >
-                  Save template
-                </button>
-                <button
-                  onClick={() => setEditingTemplate(false)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-500 transition hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
-              <p className="truncate text-xs font-medium text-slate-700">
-                {nb.template.fileName}
-              </p>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                {nb.template.sections.length} section
-                {nb.template.sections.length === 1 ? "" : "s"} detected
-              </p>
-              <ol className="mt-2 space-y-1 border-l-2 border-indigo-100 pl-3">
-                {nb.template.sections.map((section) => (
-                  <li key={section.id} className="text-xs leading-snug text-slate-600">
-                    {section.title}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+            <DetailInput
+              label="Learning Area/s"
+              value={details.learningArea ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
+              placeholder="e.g. Science"
+            />
+            <DetailInput
+              label="Name of Teacher/s"
+              value={details.teachers ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
+              placeholder="Teacher name(s)"
+            />
+            <DetailInput
+              label="Grade Level and Section"
+              value={details.gradeSection ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
+              placeholder="e.g. Grade 7 - Sampaguita"
+            />
+            <DetailInput
+              label="No. of Sessions"
+              value={details.sessions ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
+              placeholder="e.g. 4"
+            />
+            <DetailInput
+              label="References"
+              value={details.references ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, references: v }))}
+              placeholder="Books, websites, toolkits…"
+              multiline
+            />
+            <DetailInput
+              label="Declaration of AI use"
+              value={details.aiDeclaration ?? ""}
+              onChange={(v) => setDetails((d) => ({ ...d, aiDeclaration: v }))}
+              placeholder=""
+              multiline
+            />
+            <button
+              onClick={saveDetails}
+              disabled={busy !== null}
+              className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
+            >
+              Save lesson details
+            </button>
+          </div>
         </section>
 
         {warnings.length > 0 && (
@@ -689,11 +627,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             />
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-slate-400">
-                {!nb.template
-                  ? "Upload a template to get started."
-                  : !hasSources
-                    ? "No sources yet - the plan will rely on pedagogy only."
-                    : undefined}
+                {!hasSources
+                  ? "No sources yet - the plan will rely on pedagogy only."
+                  : undefined}
               </p>
               <button
                 onClick={generateAll}
@@ -720,7 +656,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 Your generated lesson plan will appear here.
               </p>
               <p className="mt-1 text-xs text-slate-400">
-                1 · Upload a template &nbsp; 2 · Add sources &nbsp; 3 · Generate
+                1 · Add sources &nbsp; 2 · Generate &nbsp; 3 · Approve each section
               </p>
             </div>
           ) : (
