@@ -54,7 +54,7 @@ const MARKERS = [
 
 function markerFor(label) {
   const norm = label.toLowerCase();
-  for (const [, marker] of MARKERS) {
+  for (const [prefix, marker] of MARKERS) {
     if (norm.startsWith(prefix)) return marker;
   }
   return null;
@@ -148,6 +148,18 @@ if (replaced !== MARKERS.length) {
   const found = new Set(usedRows.map((r) => r.marker));
   const missing = MARKERS.filter(([, m]) => !found.has(m)).map(([p]) => p);
   throw new Error(`Expected ${MARKERS.length} rows, matched ${replaced}. Missing prefixes: ${missing.join(", ")}`);
+}
+
+/* Signature block (outside the main table): swap placeholder text in place,
+   preserving the run's formatting (bold Montserrat). */
+const SIGNATURE_SWAPS = [
+  ["<w:t>NAME OF TEACHER</w:t>", "{{LF_PREPARED_BY}}"],
+  ["<w:t>Position</w:t>", "{{LF_POSITION}}"],
+];
+for (const [needle, marker] of SIGNATURE_SWAPS) {
+  const count = xml.split(needle).length - 1;
+  if (count !== 1) throw new Error(`Signature text ${needle} appears ${count} times (expected 1).`);
+  xml = xml.replace(needle, `<w:t>${marker}</w:t>`);
 }
 
 for (const [, marker] of MARKERS) {

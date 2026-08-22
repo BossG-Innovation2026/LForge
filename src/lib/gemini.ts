@@ -32,8 +32,29 @@ Core rules:
 
 function sourceBlock(sources: SourceDoc[]): string {
   return sources
-    .map((s, i) => `[S${i + 1}] ${s.name}\n${s.text}`)
+    .map((s, i) => {
+      const header = `[S${i + 1}] ${s.name}${s.url ? `\nURL: ${s.url}` : ""}`;
+      if (s.kind === "image") return `${header}\n(image attached below for visual reference)`;
+      return `${header}\n${s.text}`;
+    })
     .join("\n\n---\n\n");
+}
+
+const MAX_IMAGES_PER_REQUEST = 10;
+
+interface InlineImage {
+  mimeType: string;
+  data: string;
+}
+
+function inlineImages(sources: SourceDoc[]): InlineImage[] {
+  const out: InlineImage[] = [];
+  for (const s of sources) {
+    if (s.kind !== "image" || !s.dataUrl || out.length >= MAX_IMAGES_PER_REQUEST) continue;
+    const m = s.dataUrl.match(/^data:(image\/(?:jpeg|png));base64,(.+)$/);
+    if (m) out.push({ mimeType: m[1], data: m[2] });
+  }
+  return out;
 }
 
 function refIds(sources: SourceDoc[]): string[] {
@@ -45,11 +66,27 @@ function standardsBlock(standards?: string): string {
   return `\n## NON-NEGOTIABLE LEARNING COMPETENCY & CURRICULUM STANDARDS\n"""\n${standards}\n"""\nThese standards are fixed by the teacher. Every section you write MUST align with them: Learning Objectives must decompose the competency into achievable knowledge, skills and tasks; Flow, resources and assessment must serve those objectives. Do not contradict, dilute or drift beyond these standards.\n`;
 }
 
-async function generateJson(prompt: string, schema: Schema): Promise<unknown> {
+async function generateJson(
+  prompt: string,
+  schema: Schema,
+  images: InlineImage[] = []
+): Promise<unknown> {
   const client = getClient();
+  const contents =
+    images.length > 0
+      ? [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              ...images.map((img) => ({ inlineData: img })),
+            ],
+          },
+        ]
+      : prompt;
   const response = await client.models.generateContent({
     model: MODEL,
-    contents: prompt,
+    contents,
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
       temperature: 0.6,
@@ -129,7 +166,7 @@ Write the content for EVERY section listed above.
     instructions ? `\n\nADDITIONAL TEACHER INSTRUCTIONS (highest priority):\n${instructions}` : ""
   }`;
 
-  const data = (await generateJson(prompt, FULL_PLAN_SCHEMA)) as {
+  const data = (await generateJson(prompt, FULL_PLAN_SCHEMA, inlineImages(sources))) as {
     sections?: Array<{
       sectionId?: unknown;
       title?: unknown;
@@ -230,7 +267,7 @@ Stay consistent with the other section titles listed above.${
       : ""
   }`;
 
-  const data = (await generateJson(prompt, SINGLE_SECTION_SCHEMA)) as {
+  const data = (await generateJson(prompt, SINGLE_SECTION_SCHEMA, inlineImages(sources))) as {
     sectionId?: unknown;
     title?: unknown;
     content?: unknown;

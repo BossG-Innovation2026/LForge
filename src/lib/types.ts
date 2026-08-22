@@ -1,12 +1,17 @@
-export type SourceKind = "pdf" | "docx";
+export type SourceKind = "pdf" | "docx" | "pptx" | "image" | "web";
 
 export interface SourceDoc {
   id: string;
   name: string;
   kind: SourceKind;
+  /** Extracted text for pdf/docx/pptx/web; empty for images. */
   text: string;
   chars: number;
   addedAt: string;
+  /** For kind === "web": the source URL. */
+  url?: string;
+  /** For kind === "image": compressed data URL (jpeg/png base64). */
+  dataUrl?: string;
 }
 
 export interface TemplateSection {
@@ -38,8 +43,10 @@ export interface NotebookDetails {
   competency?: string;
   learningArea?: string;
   teachers?: string;
+  position?: string;
   gradeSection?: string;
   sessions?: string;
+  date?: string;
   references?: string;
   aiDeclaration?: string;
 }

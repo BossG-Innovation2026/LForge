@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { Notebook, NotebookDetails } from "@/lib/types";
+import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
 import { extractText } from "@/lib/client-extract";
 import { DEFAULT_AI_DECLARATION } from "@/lib/official-template";
 
@@ -217,7 +217,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     setWarnings([]);
     const localWarnings: string[] = [];
     try {
-      const sources: { name: string; kind: "pdf" | "docx"; text: string }[] = [];
+      const sources: { name: string; kind: SourceKind; text?: string }[] = [];
       for (const file of Array.from(files)) {
         try {
           const extracted = await extractText(file);

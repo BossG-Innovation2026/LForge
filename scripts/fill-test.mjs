@@ -13,7 +13,7 @@ if (!docEntry) throw new Error("document.xml missing");
 let xml = new TextDecoder().decode(docEntry.data);
 
 const beforeMarkers = (xml.match(/\{\{LF_/g) ?? []).length;
-if (beforeMarkers !== 17) throw new Error(`Expected 17 markers, found ${beforeMarkers}`);
+if (beforeMarkers !== 20) throw new Error(`Expected 20 markers, found ${beforeMarkers}`);
 
 const fields = {
   "{{LF_TITLE}}": "Photosynthesis: How Plants Make Food",
@@ -33,6 +33,9 @@ const fields = {
   "{{LF_FORMATIVE_ASSESSMENT}}": "Exit ticket: label the photosynthesis equation.",
   "{{LF_EXTENDED}}": "Grow-a-plant journal for one week.",
   "{{LF_REFLECTIONS}}": "<to be filled after the session> & special chars test 'quotes' \"double\"",
+  "{{LF_POSITION}}": "Teacher I",
+  "{{LF_DATE}}": "August 22, 2026",
+  "{{LF_PREPARED_BY}}": "Juan A. Dela Cruz"
 };
 
 xml = applyFieldsToXml(xml, fields);

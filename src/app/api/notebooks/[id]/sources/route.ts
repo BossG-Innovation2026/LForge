@@ -10,16 +10,22 @@ interface Ctx {
 const MAX_SOURCE_CHARS = 400_000;
 const MIN_TEXT_CHARS = 40;
 const MAX_FILES_PER_REQUEST = 20;
+const MAX_TOTAL_SOURCES = 20;
+const MAX_IMAGES_PER_NOTEBOOK = 10;
+const MAX_IMAGE_DATAURL_CHARS = 900_000; // ~650KB binary
+
+const TEXT_KINDS: SourceKind[] = ["pdf", "docx", "pptx"];
 
 interface IncomingSource {
   name?: unknown;
   kind?: unknown;
   text?: unknown;
+  dataUrl?: unknown;
 }
 
 /**
- * Add sources by plain text extracted client-side in the browser.
- * Body: { sources: [{ name, kind: "pdf" | "docx", text }] }
+ * Add sources prepared in the browser.
+ * Body: { sources: [{ name, kind: "pdf"|"docx"|"pptx"|"image", text?, dataUrl? }] }
  */
 export async function POST(request: NextRequest, ctx: Ctx) {
   try {
@@ -40,23 +46,54 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     const added: SourceDoc[] = [];
     const errors: string[] = [];
     for (const item of incoming.slice(0, MAX_FILES_PER_REQUEST)) {
+      if (notebook.sources.length + added.length >= MAX_TOTAL_SOURCES) {
+        errors.push(`Source limit reached (${MAX_TOTAL_SOURCES} per lesson plan).`);
+        break;
+      }
       const name =
         typeof item.name === "string" && item.name.trim()
           ? item.name.trim().slice(0, 255)
           : "Untitled file";
-      const text = typeof item.text === "string" ? item.text : "";
 
-      if (
-        item.kind !== "pdf" &&
-        item.kind !== "docx"
-      ) {
-        errors.push(`${name}: unsupported file type.`);
+      if (item.kind === "image") {
+        const dataUrl =
+          typeof item.dataUrl === "string" ? item.dataUrl : "";
+        if (!/^data:image\/(jpeg|png);base64,/.test(dataUrl)) {
+          errors.push(`${name}: image could not be processed.`);
+          continue;
+        }
+        if (dataUrl.length > MAX_IMAGE_DATAURL_CHARS) {
+          errors.push(`${name}: image is too large after compression.`);
+          continue;
+        }
+        const imageCount =
+          notebook.sources.filter((s) => s.kind === "image").length +
+          added.filter((s) => s.kind === "image").length;
+        if (imageCount >= MAX_IMAGES_PER_NOTEBOOK) {
+          errors.push(`Image limit reached (${MAX_IMAGES_PER_NOTEBOOK}).`);
+          continue;
+        }
+        added.push({
+          id: newId(),
+          name,
+          kind: "image",
+          text: "",
+          chars: 0,
+          addedAt: new Date().toISOString(),
+          dataUrl,
+        });
         continue;
       }
-      if (text.trim().length < MIN_TEXT_CHARS) {
+
+      if (!TEXT_KINDS.includes(item.kind as SourceKind)) {
         errors.push(
-          `${name}: no readable text found. Scanned or image-only files are not supported.`
+          `${item.kind === "web" ? name : name}: use the Add link option for web pages.`
         );
+        continue;
+      }
+      const text = typeof item.text === "string" ? item.text : "";
+      if (text.trim().length < MIN_TEXT_CHARS) {
+        errors.push(`${name}: no readable text found in this file.`);
         continue;
       }
       added.push({
@@ -72,8 +109,10 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       });
     }
 
-    notebook.sources.push(...added);
-    await saveNotebook(notebook);
+    if (added.length > 0) {
+      notebook.sources.push(...added);
+      await saveNotebook(notebook);
+    }
 
     return NextResponse.json({
       notebook,

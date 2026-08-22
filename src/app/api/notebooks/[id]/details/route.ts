@@ -8,7 +8,6 @@ interface Ctx {
 }
 
 const MAX_FIELD = 2000;
-const MAX_DECLARATION = 4000;
 
 function clean(value: unknown, max: number): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -33,10 +32,10 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
       competency: clean(body.competency, MAX_FIELD),
       learningArea: clean(body.learningArea, MAX_FIELD),
       teachers: clean(body.teachers, MAX_FIELD),
+      position: clean(body.position, 200),
       gradeSection: clean(body.gradeSection, MAX_FIELD),
       sessions: clean(body.sessions, 200),
-      references: clean(body.references, MAX_FIELD),
-      aiDeclaration: clean(body.aiDeclaration, MAX_DECLARATION),
+      date: clean(body.date, 100),
     };
     for (const key of Object.keys(details) as (keyof NotebookDetails)[]) {
       if (details[key] === undefined) delete details[key];
