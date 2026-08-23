@@ -18,22 +18,23 @@ export default function ForgeBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const maybeCtx = canvas.getContext("2d");
+    const el = canvasRef.current;
+    if (!el) return;
+    const cvs: HTMLCanvasElement = el;
+    const maybeCtx = cvs.getContext("2d");
     if (!maybeCtx) return;
     const ctx: CanvasRenderingContext2D = maybeCtx;
 
     let animId: number;
     const sparks: Spark[] = [];
-    let canvasW = canvas.width;
-    let canvasH = canvas.height;
+    let canvasW = cvs.width;
+    let canvasH = cvs.height;
 
     function resize() {
       canvasW = window.innerWidth;
       canvasH = window.innerHeight;
-      canvas.width = canvasW;
-      canvas.height = canvasH;
+      cvs.width = canvasW;
+      cvs.height = canvasH;
     }
     resize();
     window.addEventListener("resize", resize);
