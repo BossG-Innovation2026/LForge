@@ -857,7 +857,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               onBlur={saveTitle}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
               className="lf-input w-full px-2 py-1.5 !text-xl font-bold"
-              aria-label="Lesson plan title"
+              aria-label="Specific topic of the lesson"
+              placeholder="Write your specific topic here"
             />
             <div className="flex shrink-0 flex-col items-end gap-1">
               <SmolderButton
@@ -874,8 +875,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 {busy === "export"
                   ? "Preparing…"
                   : allApproved
-                    ? "Download final lesson plan"
-                    : "Export DOCX"}
+                    ? "Get it now!"
+                    : "Get it now!"}
               </SmolderButton>
               {nb.result && !allApproved && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
@@ -932,7 +933,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       label="Subject"
                       value={details.learningArea ?? ""}
                       onChange={(v) => { setDetails((d) => ({ ...d, learningArea: v })); scheduleAutoSave(); }}
-                      placeholder="e.g. Science"
+                      placeholder="e.g. General Science"
                       maxLength={500}
                     />
                     <DetailInput
@@ -953,7 +954,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       label="Grade Level and Section"
                       value={details.gradeSection ?? ""}
                       onChange={(v) => { setDetails((d) => ({ ...d, gradeSection: v })); scheduleAutoSave(); }}
-                      placeholder="e.g. Grade 7 - Sampaguita"
+                      placeholder="e.g. 11-Michelin"
                       maxLength={500}
                     />
                     <DetailInput
