@@ -644,9 +644,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const genBlockReason =
     !nb.template || nb.template.sections.length === 0
       ? "Lesson format unavailable."
-      : !competencySet
-        ? "Set the Learning Competency & Curriculum Standards first - it anchors every section."
-        : null;
+      : null;
   const canGenerate = !genBlockReason && !generating && busy !== "sources";
 
   const unapprovedWithContent = nb.result?.sections.filter(
@@ -914,11 +912,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       Learning Competency &amp; Curriculum Standards{" "}
                       <span aria-hidden="true">*</span>
                     </span>
-                    {!competencySet && (
-                      <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-amber-400/90">
-                        Required - anchors every generated section
-                      </span>
-                    )}
                     <textarea
                       value={details.competency ?? ""}
                       onChange={(e) => {
@@ -1004,24 +997,22 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 placeholder="Write your specific instructions and add-on."
                 className="lf-input resize-none px-3 py-2 !text-sm"
               />
-              <div className="mt-3 flex items-center justify-between gap-4">
-                <p className="min-w-0 text-xs text-zinc-500">
-                  {genBlockReason ?? (!hasSources
-                    ? "No references yet - the plan will rely on pedagogy only."
-                    : undefined)}
+              {!hasSources && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  No references yet - the plan will rely on pedagogy only.
                 </p>
+              )}
+              <div className="mt-3">
                 <SmolderButton
                   variant="forge"
                   onClick={generateAll}
                   disabled={!canGenerate}
-                  className="shrink-0 rounded-none px-5 py-2 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+                  className="w-full rounded-none px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
                 >
                   {busy === "generate" ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center justify-center gap-2">
                       <Spinner className="h-4 w-4" /> Generating…
                     </span>
-                  ) : nb.result ? (
-                    "Strike It Now !!!"
                   ) : (
                     "Strike It Now !!!"
                   )}
