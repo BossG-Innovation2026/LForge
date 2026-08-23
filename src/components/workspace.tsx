@@ -280,6 +280,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   );
   const [detailsSaved, setDetailsSaved] = useState(false);
   const [detailsEditing, setDetailsEditing] = useState(false);
+  const [activeSessionTab, setActiveSessionTab] = useState(0);
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -870,6 +871,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 value={details.competency}
                 clamp
               />
+              <DetailSummary label="Content Standard" value={details.contentStandard} clamp />
               <DetailSummary label="Subject" value={details.learningArea} />
               <DetailSummary label="Name of Teacher/s" value={details.teachers} />
               <DetailSummary label="Position / Designation" value={details.position} />
@@ -990,7 +992,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                         setDetails((d) => ({ ...d, competency: e.target.value }));
                         scheduleAutoSave();
                       }}
-                      rows={4}
+                      rows={3}
                       maxLength={2000}
                       placeholder="Write here the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions."
                       className="lf-input resize-none"
@@ -999,6 +1001,23 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
 
                 <div className="lf-panel space-y-2 p-3">
+                  {/* Content Standard - spans full width */}
+                  <div>
+                    <label className="block">
+                      <span className="lf-label mb-0.5 block">Content Standard</span>
+                      <textarea
+                        value={details.contentStandard ?? ""}
+                        onChange={(e) => {
+                          setDetails((d) => ({ ...d, contentStandard: e.target.value }));
+                          scheduleAutoSave();
+                        }}
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="Write the specific content/topic to be taught — this is the central anchor for generation."
+                        className="lf-input resize-none"
+                      />
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                     <DetailInput
                       label="Subject"
@@ -1032,7 +1051,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       label="No. of Sessions"
                       value={details.sessions ?? ""}
                       onChange={(v) => { setDetails((d) => ({ ...d, sessions: v })); scheduleAutoSave(); }}
-                      placeholder="e.g. 4"
+                      placeholder="e.g. 3"
                       maxLength={200}
                     />
                     <DetailInput
@@ -1043,15 +1062,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       maxLength={100}
                     />
                   </div>
-                  <div className="mt-2">
-                    <DetailInput
-                      label="Learner Context"
-                      value={details.learnerContext ?? ""}
-                      onChange={(v) => { setDetails((d) => ({ ...d, learnerContext: v })); scheduleAutoSave(); }}
-                      placeholder="Describe your learners' strengths, interests, recent performance, and possible barriers to learning."
-                      maxLength={2000}
-                      multiline
-                    />
+                  <div>
+                    <label className="block">
+                      <span className="lf-label mb-0.5 block">Learner Context</span>
+                      <textarea
+                        value={details.learnerContext ?? ""}
+                        onChange={(e) => {
+                          setDetails((d) => ({ ...d, learnerContext: e.target.value }));
+                          scheduleAutoSave();
+                        }}
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Describe your learners' strengths, interests, recent performance, and possible barriers to learning."
+                        className="lf-input resize-none"
+                      />
+                    </label>
                   </div>
                 </div>
               </section>
@@ -1153,209 +1178,235 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 />
               </div>
 
-              {nb.result.sections.map((section) => {
-                const isCompetency = section.sectionId === COMPETENCY_SECTION_ID;
-                const isApproved = Boolean(section.approvedAt);
-                const isEditingThis = editingSection === section.sectionId;
+              {/* Session tabs for multi-session */}
+              {nb.result.sessionPlans && nb.result.sessionPlans.length > 1 && (
+                <div className="flex gap-1 border-b" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
+                  {nb.result.sessionPlans.map((sp, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveSessionTab(i)}
+                      className={`px-4 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+                        activeSessionTab === i
+                          ? "border-b-2 border-[var(--lf-accent)] text-[var(--lf-accent)]"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      Session {sp.sessionNumber}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                if (isCompetency) {
+              {(() => {
+                const activeSections = nb.result.sessionPlans && nb.result.sessionPlans.length > 1
+                  ? [
+                      // Always show competency section first
+                      ...nb.result.sections.filter((s) => s.sectionId === COMPETENCY_SECTION_ID),
+                      ...nb.result.sessionPlans[activeSessionTab].sections,
+                    ]
+                  : nb.result.sections;
+
+                return activeSections.map((section) => {
+                  const isCompetency = section.sectionId === COMPETENCY_SECTION_ID;
+                  const isApproved = Boolean(section.approvedAt);
+                  const isEditingThis = editingSection === section.sectionId;
+
+                  if (isCompetency) {
+                    return (
+                      <article
+                        key={section.sectionId}
+                        className="lf-panel lf-frame relative border p-5 shadow-[0_0_30px_rgba(0,255,156,0.07)]"
+                        style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 60%)" }}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <h2 className="font-semibold text-emerald-50">{section.title}</h2>
+                          <span className="shrink-0 border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                            Teacher standard · locked
+                          </span>
+                        </div>
+                        <ContentBody content={section.content} />
+                        <p className="mt-3 border-t pt-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
+                          Authored by you in Lesson details - the AI builds every other section on this standard.
+                        </p>
+                      </article>
+                    );
+                  }
+
                   return (
                     <article
-                      key={section.sectionId}
-                      className="lf-panel lf-frame relative border p-5 shadow-[0_0_30px_rgba(0,255,156,0.07)]"
-                      style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 60%)" }}
+                      key={`${activeSessionTab}-${section.sectionId}`}
+                      className={`rounded-none border p-5 shadow-sm transition-colors ${
+                        isApproved
+                          ? "border-[var(--lf-accent)]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
+                          : "border-[var(--lf-accent)]/15"
+                      }`}
+                      style={{ backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
                     >
                       <div className="mb-3 flex items-start justify-between gap-3">
                         <h2 className="font-semibold text-emerald-50">{section.title}</h2>
-                        <span className="shrink-0 border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
-                          Teacher standard · locked
-                        </span>
-                      </div>
-                      <ContentBody content={section.content} />
-                      <p className="mt-3 border-t pt-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
-                        Authored by you in Lesson details - the AI builds every other section on this standard.
-                      </p>
-                    </article>
-                  );
-                }
-
-                return (
-                  <article
-                    key={section.sectionId}
-                    className={`rounded-none border p-5 shadow-sm transition-colors ${
-                      isApproved
-                        ? "border-[var(--lf-accent)]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
-                        : "border-[var(--lf-accent)]/15"
-                    }`}
-                    style={{ backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <h2 className="font-semibold text-emerald-50">{section.title}</h2>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {isApproved ? (
-                          <>
-                            <span className="border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
-                              Approved ✓
-                            </span>
-                            <SmolderButton
-                              variant="ghost"
-                              onClick={() => approveSection(section.sectionId)}
-                              disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
-                            >
-                              Un-approve
-                            </SmolderButton>
-                          </>
-                        ) : (
-                          <>
-                            <SmolderButton
-                              variant="muted"
-                              onClick={() => {
-                                if (isEditingThis) {
+                        <div className="flex shrink-0 items-center gap-2">
+                          {isApproved ? (
+                            <>
+                              <span className="border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                                Approved ✓
+                              </span>
+                              <SmolderButton
+                                variant="ghost"
+                                onClick={() => approveSection(section.sectionId)}
+                                disabled={generating}
+                                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                              >
+                                Un-approve
+                              </SmolderButton>
+                            </>
+                          ) : (
+                            <>
+                              <SmolderButton
+                                variant="muted"
+                                onClick={() => {
+                                  if (isEditingThis) {
+                                    setEditingSection(null);
+                                    setEditText("");
+                                  } else {
+                                    setEditingSection(section.sectionId);
+                                    setEditText(section.content);
+                                    setFeedbackFor(null);
+                                  }
+                                }}
+                                disabled={generating}
+                                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                              >
+                                {isEditingThis ? "Cancel edit" : "Edit"}
+                              </SmolderButton>
+                              <SmolderButton
+                                variant="muted"
+                                onClick={() => {
+                                  setFeedbackFor(feedbackFor === section.sectionId ? null : section.sectionId);
+                                  setFeedbackText("");
                                   setEditingSection(null);
-                                  setEditText("");
-                                } else {
-                                  setEditingSection(section.sectionId);
-                                  setEditText(section.content);
-                                  setFeedbackFor(null);
-                                }
-                              }}
-                              disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
-                            >
-                              {isEditingThis ? "Cancel edit" : "Edit"}
-                            </SmolderButton>
+                                }}
+                                disabled={generating}
+                                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                              >
+                                Refine
+                              </SmolderButton>
+                              <SmolderButton
+                                variant="ghost"
+                                onClick={() => regenerateSection(section.sectionId, false)}
+                                disabled={generating}
+                                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider !text-emerald-300"
+                              >
+                                {sectionBusy === section.sectionId ? (
+                                  <Spinner className="mr-1 inline h-3 w-3" />
+                                ) : null}
+                                Regenerate
+                              </SmolderButton>
+                              <SmolderButton
+                                variant="forge"
+                                onClick={() => approveSection(section.sectionId)}
+                                disabled={generating || busy !== null}
+                                className="flex items-center gap-1.5 rounded-none px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                              >
+                                {sectionBusy === section.sectionId ? (
+                                  <Spinner className="h-3 w-3" />
+                                ) : null}
+                                Approve
+                              </SmolderButton>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {isEditingThis && (
+                        <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            rows={8}
+                            className="lf-input resize-y !text-sm"
+                            placeholder="Edit section content…"
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
                             <SmolderButton
                               variant="muted"
-                              onClick={() => {
-                                setFeedbackFor(
-                                  feedbackFor === section.sectionId ? null : section.sectionId
-                                );
-                                setFeedbackText("");
-                                setEditingSection(null);
-                              }}
-                              disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                              onClick={() => { setEditingSection(null); setEditText(""); }}
+                              className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
                             >
-                              Refine
+                              Cancel
                             </SmolderButton>
                             <SmolderButton
-                              variant="ghost"
-                              onClick={() => regenerateSection(section.sectionId, false)}
-                              disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider !text-emerald-300"
+                              variant="forge"
+                              onClick={() => saveSection(section.sectionId)}
+                              disabled={!editText.trim() || sectionBusy === section.sectionId}
+                              className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                             >
                               {sectionBusy === section.sectionId ? (
                                 <Spinner className="mr-1 inline h-3 w-3" />
                               ) : null}
-                              Regenerate
+                              Save edits
+                            </SmolderButton>
+                          </div>
+                        </div>
+                      )}
+
+                      {feedbackFor === section.sectionId && (
+                        <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
+                          <textarea
+                            value={feedbackText}
+                            onChange={(e) => setFeedbackText(e.target.value)}
+                            rows={2}
+                            maxLength={2000}
+                            placeholder="What should change in this section?"
+                            className="lf-input resize-none !text-sm"
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                            <SmolderButton
+                              variant="muted"
+                              onClick={() => setFeedbackFor(null)}
+                              className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
+                            >
+                              Cancel
                             </SmolderButton>
                             <SmolderButton
                               variant="forge"
-                              onClick={() => approveSection(section.sectionId)}
-                              disabled={generating || busy !== null}
-                              className="flex items-center gap-1.5 rounded-none px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                              onClick={() => regenerateSection(section.sectionId, true)}
+                              disabled={!feedbackText.trim() || generating}
+                              className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                             >
-                              {sectionBusy === section.sectionId ? (
-                                <Spinner className="h-3 w-3" />
-                              ) : null}
-                              Approve
+                              Apply revision
                             </SmolderButton>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Inline editor */}
-                    {isEditingThis && (
-                      <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
-                        <textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          rows={8}
-                          className="lf-input resize-y !text-sm"
-                          placeholder="Edit section content…"
-                        />
-                        <div className="mt-2 flex justify-end gap-2">
-                          <SmolderButton
-                            variant="muted"
-                            onClick={() => { setEditingSection(null); setEditText(""); }}
-                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
-                          >
-                            Cancel
-                          </SmolderButton>
-                          <SmolderButton
-                            variant="forge"
-                            onClick={() => saveSection(section.sectionId)}
-                            disabled={!editText.trim() || sectionBusy === section.sectionId}
-                            className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
-                          >
-                            {sectionBusy === section.sectionId ? (
-                              <Spinner className="mr-1 inline h-3 w-3" />
-                            ) : null}
-                            Save edits
-                          </SmolderButton>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Refine with feedback */}
-                    {feedbackFor === section.sectionId && (
-                      <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
-                        <textarea
-                          value={feedbackText}
-                          onChange={(e) => setFeedbackText(e.target.value)}
-                          rows={2}
-                          maxLength={2000}
-                          placeholder="What should change in this section?"
-                          className="lf-input resize-none !text-sm"
-                        />
-                        <div className="mt-2 flex justify-end gap-2">
-                          <SmolderButton
-                            variant="muted"
-                            onClick={() => setFeedbackFor(null)}
-                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
-                          >
-                            Cancel
-                          </SmolderButton>
-                          <SmolderButton
-                            variant="forge"
-                            onClick={() => regenerateSection(section.sectionId, true)}
-                            disabled={!feedbackText.trim() || generating}
-                            className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
-                          >
-                            Apply revision
-                          </SmolderButton>
+                      {sectionBusy === section.sectionId && !isEditingThis ? (
+                        <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
+                          <Spinner className="h-4 w-4 text-[var(--lf-accent)]" />
+                          Rewriting this section…
                         </div>
-                      </div>
-                    )}
+                      ) : !isEditingThis ? (
+                        <ContentBody content={section.content} />
+                      ) : null}
 
-                    {sectionBusy === section.sectionId && !isEditingThis ? (
-                      <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
-                        <Spinner className="h-4 w-4 text-[var(--lf-accent)]" />
-                        Rewriting this section…
-                      </div>
-                    ) : !isEditingThis ? (
-                      <ContentBody content={section.content} />
-                    ) : null}
-
-                    {section.sourceRefs.length > 0 && !isEditingThis && (
-                      <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
-                        {section.sourceRefs.map((ref) => (
-                          <span
-                            key={ref}
-                            title={refName(ref)}
-                            className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
-                            style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
-                          >
-                            [{ref}] {refName(ref)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
+                      {section.sourceRefs.length > 0 && !isEditingThis && (
+                        <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                          {section.sourceRefs.map((ref) => (
+                            <span
+                              key={ref}
+                              title={refName(ref)}
+                              className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                              style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
+                            >
+                              [{ref}] {refName(ref)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
@@ -1369,8 +1420,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 Generating your lesson plan…
               </p>
               <p className="max-w-xs text-center font-mono text-xs leading-relaxed text-zinc-500">
-                Anchoring on your competency standards, reading sources and filling every
-                template section. This usually takes under a minute.
+                {details.sessions && parseInt(details.sessions) > 1
+                  ? `Generating ${details.sessions} sessions sequentially with continuity. This may take a few minutes.`
+                  : "Anchoring on your competency standards, reading sources and filling every template section. This usually takes under a minute."
+                }
               </p>
             </div>
           </div>

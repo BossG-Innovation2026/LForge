@@ -40,14 +40,21 @@ export interface PlanSection {
   approvedAt?: string;
 }
 
+export interface SessionPlan {
+  sessionNumber: number;
+  sections: PlanSection[];
+}
+
 export interface PlanResult {
   generatedAt: string;
   instructions?: string;
   sections: PlanSection[];
+  sessionPlans?: SessionPlan[];
 }
 
 export interface NotebookDetails {
   competency?: string;
+  contentStandard?: string;
   learningArea?: string;
   teachers?: string;
   position?: string;

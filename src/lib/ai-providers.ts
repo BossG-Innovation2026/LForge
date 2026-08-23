@@ -1,4 +1,4 @@
-import type { PlanSection, SourceDoc, TemplateSection } from "./types";
+import type { PlanSection, SessionPlan, SourceDoc, TemplateSection } from "./types";
 
 export type ProviderId = "gemini" | "groq" | "openrouter" | "together";
 
@@ -521,4 +521,171 @@ export async function generateSingleSection({
     content,
     sourceRefs: sanitizeRefs(data.sourceRefs, refs),
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Multi-session generation                                            */
+/* ------------------------------------------------------------------ */
+
+export function parseSessionCount(sessions?: string): number {
+  if (!sessions) return 1;
+  const m = sessions.match(/\d+/);
+  const n = m ? parseInt(m[0], 10) : 1;
+  return Math.max(1, Math.min(n, 10));
+}
+
+function sessionContextBlock(
+  sessionNum: number,
+  totalSessions: number,
+  previousSummary?: string
+): string {
+  const position =
+    sessionNum === 1
+      ? "first"
+      : sessionNum === totalSessions
+      ? "final"
+      : `session ${sessionNum} of ${totalSessions}`;
+  let block = `\n## SESSION INFO\nThis is the ${position} session (${sessionNum} of ${totalSessions} total).\n`;
+  if (sessionNum === 1) {
+    block += `Focus: introduce the topic, activate prior knowledge, establish objectives clearly.\n`;
+  } else if (sessionNum === totalSessions) {
+    block += `Focus: consolidate learning, wrap up the competency, strong formative assessment and reflection.\n`;
+  } else {
+    block += `Focus: build on Session ${sessionNum - 1}, deepen understanding, progress toward the full competency.\n`;
+  }
+  if (previousSummary) {
+    block += `\n## WHAT WAS COVERED IN PREVIOUS SESSION(S)\n"""\n${previousSummary}\n"""\nContinue from where the previous session ended. Do NOT repeat activities already done. Reference prior learning explicitly.\n`;
+  }
+  return block;
+}
+
+function buildSessionPrompt(
+  sessionNum: number,
+  totalSessions: number,
+  sources: SourceDoc[],
+  sections: TemplateSection[],
+  standards?: string,
+  learnerContext?: string,
+  topic?: string,
+  instructions?: string,
+  previousSummary?: string
+): string {
+  const topicBlock = topic
+    ? `\n## CONTENT STANDARD / LESSON TOPIC\n"""\n${topic}\n"""\nThis is the specific content to be taught across all sessions. Anchor this session to it.\n`
+    : "";
+  const sourceSection =
+    sources.length > 0
+      ? `## SOURCES\n${sourceBlock(sources)}\n`
+      : `## SOURCES\nNo reference materials uploaded. Use your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and SHS pedagogy.\n`;
+  return `${topicBlock}${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sessionContextBlock(sessionNum, totalSessions, previousSummary)}${sourceSection}
+## LESSON PLAN TEMPLATE
+${sections
+    .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
+    .join("\n")}
+## TASK
+Write a complete lesson plan for SESSION ${sessionNum} OF ${totalSessions}.
+- Each section must be specific to THIS session only.
+- Objectives must reflect this session's scope — unpack the competency progressively.
+- sectionId must be exactly the id in angle brackets (e.g. sec-1).
+- content: fully written section (plain text, "- " bullets allowed).
+- sourceRefs: sources used, e.g. ["S1"]. Use [] if none.
+Return ONLY valid JSON: {"sections":[{"sectionId":"...","title":"...","content":"...","sourceRefs":[...]},...]}${
+    instructions ? `\n\nADDITIONAL TEACHER INSTRUCTIONS:\n${instructions}` : ""
+  }`;
+}
+
+function summarizeSession(sections: PlanSection[]): string {
+  const objectives = sections.find((s) => s.title.toLowerCase().includes("objective"));
+  const flow = sections.find((s) => s.title.toLowerCase().includes("flow"));
+  const parts: string[] = [];
+  if (objectives) parts.push(`Objectives covered:\n${objectives.content.slice(0, 400)}`);
+  if (flow) parts.push(`Activities done:\n${flow.content.slice(0, 400)}`);
+  return parts.join("\n\n");
+}
+
+async function generateOneSession(
+  sessionNum: number,
+  totalSessions: number,
+  sources: SourceDoc[],
+  sections: TemplateSection[],
+  standards: string,
+  learnerContext: string | undefined,
+  topic: string | undefined,
+  instructions: string | undefined,
+  previousSummary: string | undefined,
+  modelId: string,
+  competencySectionId: string
+): Promise<PlanSection[]> {
+  const generatable = sections.filter((s) => s.id !== competencySectionId);
+  const refs = refIds(sources);
+  const prompt = buildSessionPrompt(
+    sessionNum, totalSessions, sources, generatable,
+    standards, learnerContext, topic, instructions, previousSummary
+  );
+
+  const data = (await callModel(modelId, prompt)) as {
+    sections?: Array<{ sectionId?: unknown; title?: unknown; content?: unknown; sourceRefs?: unknown }>;
+  };
+
+  const byId = new Map<string, PlanSection>();
+  for (const s of data.sections ?? []) {
+    if (typeof s.sectionId === "string" && typeof s.content === "string" && !byId.has(s.sectionId)) {
+      byId.set(s.sectionId, {
+        sectionId: s.sectionId,
+        title: typeof s.title === "string" && s.title.trim() ? s.title.trim() : generatable.find((t) => t.id === s.sectionId)?.title ?? s.sectionId,
+        content: s.content.trim(),
+        sourceRefs: sanitizeRefs(s.sourceRefs, refs),
+      });
+    }
+  }
+
+  const result: PlanSection[] = [];
+  for (const section of generatable) {
+    const existing = byId.get(section.id);
+    if (existing && existing.content.length > 0) {
+      result.push(existing);
+    } else {
+      result.push(
+        await generateSingleSection({ sources, sections: generatable, targetSectionId: section.id, standards, learnerContext, topic, modelId })
+      );
+    }
+  }
+  return result;
+}
+
+interface MultiSessionArgs {
+  sources: SourceDoc[];
+  sections: TemplateSection[];
+  standards: string;
+  sessionCount: number;
+  competencySectionId: string;
+  instructions?: string;
+  learnerContext?: string;
+  topic?: string;
+  modelId?: string;
+}
+
+export async function generateMultiSession({
+  sources,
+  sections,
+  standards,
+  sessionCount,
+  competencySectionId,
+  instructions,
+  learnerContext,
+  topic,
+  modelId = DEFAULT_MODEL_ID,
+}: MultiSessionArgs): Promise<SessionPlan[]> {
+  const sessionPlans: SessionPlan[] = [];
+  let previousSummary: string | undefined;
+
+  for (let i = 1; i <= sessionCount; i++) {
+    const planSections = await generateOneSession(
+      i, sessionCount, sources, sections, standards,
+      learnerContext, topic, instructions, previousSummary, modelId, competencySectionId
+    );
+    sessionPlans.push({ sessionNumber: i, sections: planSections });
+    previousSummary = summarizeSession(planSections);
+  }
+  return sessionPlans;
 }

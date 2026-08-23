@@ -28,7 +28,6 @@ const M = {
   reflections: "{{LF_REFLECTIONS}}",
 } as const;
 
-/** Markers filled in place (single <w:t> swap) to preserve run formatting. */
 const INLINE_MARKERS = new Set<string>([M.preparedBy, M.position, M.date]);
 
 function escapeXml(s: string): string {
@@ -40,15 +39,23 @@ function escapeXml(s: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function runWithFont(text: string): string {
+  return `<w:r><w:rPr><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/></w:rPr><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r>`;
+}
+
 function paragraphsFor(value: string): string {
   return value
     .split(/\r?\n/)
     .map((line) =>
       line.trim()
-        ? `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`
+        ? `<w:p>${runWithFont(line)}</w:p>`
         : "<w:p/>"
     )
     .join("");
+}
+
+function sessionHeaderParagraph(label: string): string {
+  return `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/></w:rPr><w:t>${escapeXml(label)}</w:t></w:r></w:p><w:p/>`;
 }
 
 function replaceParagraphContaining(xml: string, marker: string, value: string): string {
@@ -81,7 +88,6 @@ function replaceTextOnly(xml: string, marker: string, value: string): string {
   return xml.slice(0, tOpenEnd + 1) + escapeXml(value) + xml.slice(tClose);
 }
 
-/** References are derived from the notebook's sources (files + web links). */
 function deriveReferences(notebook: Notebook): string {
   return notebook.sources
     .map((s) =>
@@ -110,15 +116,41 @@ export function notebookToFillFields(notebook: Notebook): Record<string, string>
   fields[M.preparedBy] = (d.teachers ?? "").toUpperCase();
   fields[M.position] = d.position ?? "";
   fields[M.competency] = content("sec-1");
-  fields[M.objectives] = content("sec-2");
-  fields[M.learnerContext] = content("sec-3");
-  fields[M.preLesson] = content("sec-4");
-  fields[M.flow] = content("sec-5");
-  fields[M.resources] = content("sec-6");
-  fields[M.integration] = content("sec-7");
-  fields[M.formativeAssessment] = content("sec-8");
-  fields[M.extendedLearning] = content("sec-9");
-  fields[M.reflections] = content("sec-10");
+
+  const sessionPlans = notebook.result?.sessionPlans;
+  if (sessionPlans && sessionPlans.length > 1) {
+    // Multi-session: stack all sessions for each section slot
+    const getSectionAcrossSessions = (secId: string): string =>
+      sessionPlans
+        .map((sp) => {
+          const sec = sp.sections.find((s) => s.sectionId === secId);
+          return sec?.content
+            ? `--- Session ${sp.sessionNumber} ---\n${sec.content}`
+            : null;
+        })
+        .filter(Boolean)
+        .join("\n\n");
+
+    fields[M.objectives] = getSectionAcrossSessions("sec-2");
+    fields[M.learnerContext] = getSectionAcrossSessions("sec-3");
+    fields[M.preLesson] = getSectionAcrossSessions("sec-4");
+    fields[M.flow] = getSectionAcrossSessions("sec-5");
+    fields[M.resources] = getSectionAcrossSessions("sec-6");
+    fields[M.integration] = getSectionAcrossSessions("sec-7");
+    fields[M.formativeAssessment] = getSectionAcrossSessions("sec-8");
+    fields[M.extendedLearning] = getSectionAcrossSessions("sec-9");
+    fields[M.reflections] = getSectionAcrossSessions("sec-10");
+  } else {
+    fields[M.objectives] = content("sec-2");
+    fields[M.learnerContext] = content("sec-3");
+    fields[M.preLesson] = content("sec-4");
+    fields[M.flow] = content("sec-5");
+    fields[M.resources] = content("sec-6");
+    fields[M.integration] = content("sec-7");
+    fields[M.formativeAssessment] = content("sec-8");
+    fields[M.extendedLearning] = content("sec-9");
+    fields[M.reflections] = content("sec-10");
+  }
   return fields;
 }
 
@@ -129,12 +161,10 @@ export function applyFieldsToXml(xml: string, fields: Record<string, string>): s
       ? replaceTextOnly(out, marker, value)
       : replaceParagraphContaining(out, marker, value);
   }
-  // Set Bookman Old Style as default font for all runs
   out = out.replace(
     /<w:rPr>/g,
     '<w:rPr><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/>'
   );
-  // Add run properties to runs that don't have them
   out = out.replace(
     /<w:r(?![^>]*>)(?!.*<w:rPr>)/g,
     '<w:r><w:rPr><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/></w:rPr>'
@@ -163,3 +193,4 @@ export async function fillOfficialDocx(
   );
   return buildZip(outEntries);
 }
+

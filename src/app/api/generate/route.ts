@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateFullPlan, generateSingleSection } from "@/lib/ai-providers";
+import { generateFullPlan, generateSingleSection, generateMultiSession, parseSessionCount } from "@/lib/ai-providers";
 import { getNotebook, saveNotebook } from "@/lib/store";
 import { jsonError } from "@/lib/http";
 import { searchWeb, searchResultsToSourceDocs } from "@/lib/web-search";
@@ -48,14 +48,15 @@ export async function POST(request: NextRequest) {
     const instructions = body.instructions?.trim().slice(0, 4000) || undefined;
     const standards = notebook.details?.competency?.trim() || undefined;
     const learnerContext = notebook.details?.learnerContext?.trim() || undefined;
-    const topic = notebook.title?.trim() || undefined;
+    const topic = notebook.details?.contentStandard?.trim() || undefined;
+    const sessionCount = parseSessionCount(notebook.details?.sessions);
 
-    // Build sources — use uploaded sources, or fetch up to 3 from the web
     let sources: SourceDoc[] = notebook.sources;
     if (sources.length === 0 && standards && topic) {
       sources = await fetchWebSources(topic, standards);
     }
 
+    // Single section regeneration
     if (body.sectionId) {
       if (body.sectionId === COMPETENCY_SECTION_ID) {
         return NextResponse.json(
@@ -70,8 +71,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const previous =
-        notebook.result?.sections.find((s) => s.sectionId === body.sectionId) ?? null;
+      const previous = notebook.result?.sections.find((s) => s.sectionId === body.sectionId) ?? null;
 
       const section = await generateSingleSection({
         sources,
@@ -111,33 +111,57 @@ export async function POST(request: NextRequest) {
     const competencyTitle =
       notebook.template.sections.find((s) => s.id === COMPETENCY_SECTION_ID)?.title ??
       COMPETENCY_FALLBACK_TITLE;
-    const generatable = notebook.template.sections.filter((s) => s.id !== COMPETENCY_SECTION_ID);
-
-    const sections = await generateFullPlan({
-      sources,
-      sections: generatable,
-      instructions,
-      standards,
-      learnerContext,
-      topic,
-      modelId: body.modelId,
-    });
 
     const now = new Date().toISOString();
-    notebook.result = {
-      generatedAt: now,
-      instructions,
-      sections: [
-        {
-          sectionId: COMPETENCY_SECTION_ID,
-          title: competencyTitle,
-          content: standards,
-          sourceRefs: [],
-          approvedAt: now,
-        },
-        ...sections,
-      ],
+    const competencySection = {
+      sectionId: COMPETENCY_SECTION_ID,
+      title: competencyTitle,
+      content: standards,
+      sourceRefs: [],
+      approvedAt: now,
     };
+
+    if (sessionCount > 1) {
+      // Multi-session generation
+      const sessionPlans = await generateMultiSession({
+        sources,
+        sections: notebook.template.sections,
+        standards,
+        sessionCount,
+        competencySectionId: COMPETENCY_SECTION_ID,
+        instructions,
+        learnerContext,
+        topic,
+        modelId: body.modelId,
+      });
+
+      // Flatten first session sections as the primary result for backward compat
+      notebook.result = {
+        generatedAt: now,
+        instructions,
+        sections: [competencySection, ...sessionPlans[0].sections],
+        sessionPlans,
+      };
+    } else {
+      // Single session
+      const generatable = notebook.template.sections.filter((s) => s.id !== COMPETENCY_SECTION_ID);
+      const sections = await generateFullPlan({
+        sources,
+        sections: generatable,
+        instructions,
+        standards,
+        learnerContext,
+        topic,
+        modelId: body.modelId,
+      });
+
+      notebook.result = {
+        generatedAt: now,
+        instructions,
+        sections: [competencySection, ...sections],
+      };
+    }
+
     await saveNotebook(notebook);
     return NextResponse.json({ notebook });
   } catch (error) {
