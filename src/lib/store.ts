@@ -56,7 +56,7 @@ export async function createNotebook(title: string): Promise<Notebook> {
   const now = new Date().toISOString();
   const notebook: Notebook = {
     id: newId(),
-    title: title.trim() || "Untitled lesson plan",
+    title: title.trim() || "Specific Topic of the Lesson",
     createdAt: now,
     updatedAt: now,
     sources: [],
