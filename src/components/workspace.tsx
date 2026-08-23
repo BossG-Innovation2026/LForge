@@ -282,6 +282,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [detailsEditing, setDetailsEditing] = useState(false);
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const generating = busy === "generate" || sectionBusy !== null;
   const hasSources = nb.sources.length > 0;
@@ -425,6 +426,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     } catch (err) {
       fail(err);
     }
+  }
+
+  function scheduleAutoSave() {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      saveDetails();
+    }, 800);
   }
 
   function backToPlan(): void {
@@ -754,37 +762,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     <div className="flex min-h-0 w-full flex-1">
       {/* Sidebar */}
       <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r p-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "rgba(0,0,0,0.4)" }}>
-        {!showDetailsForm && referencesBlock}
-
-        {/* Format */}
-        <section>
-          <div className="mb-2">
-            <SectionHeading>Format</SectionHeading>
-          </div>
-          <div className="lf-panel p-3">
-            <p className="font-mono text-xs uppercase tracking-wider text-emerald-100">
-              ILAW Framework
-            </p>
-            <p className="mt-0.5 font-mono text-[11px] tracking-wide text-zinc-500">
-              DO 016 s.2026 · replaces DLL &amp; DLP
-            </p>
-            <ol className="mt-2 space-y-1 border-l pl-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)" }}>
-              {nb.template?.sections.map((section) => (
-                <li
-                  key={section.id}
-                  className={`text-xs leading-snug ${
-                    section.id === COMPETENCY_SECTION_ID
-                      ? "font-medium text-[var(--lf-accent)]"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  {section.title}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
         {/* AI Model */}
         <section>
           <div className="mb-2">
@@ -799,6 +776,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             All listed models are free. Set the matching API key in .env.local to use providers other than Gemini.
           </p>
         </section>
+
+        {!showDetailsForm && referencesBlock}
 
         {/* Lesson details - compact read-only summary once a plan exists */}
         {!showDetailsForm && (
@@ -837,7 +816,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     <Spinner className="h-3 w-3" /> Regenerating…
                   </span>
                 ) : (
-                  "Regenerate plan"
+                  "Strike It Now !!!"
                 )}
               </SmolderButton>
             </div>
@@ -905,18 +884,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </div>
           </div>
 
-          {/* Setup row - lesson details and references side by side */}
+          {/* Setup row - lesson details */}
           {showDetailsForm && (
-            <div className="mb-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-5">
-              <section className="lg:col-span-3">
+            <div className="mb-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+              <section className="lg:col-span-2">
                 <div className="mb-2 flex items-center justify-between">
                   <SectionHeading>Lesson details</SectionHeading>
                   <div className="flex items-center gap-3">
-                    {detailsSaved && (
-                      <span className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "var(--lf-accent)" }}>
-                        Saved ✓
-                      </span>
-                    )}
                     {nb.result && (
                       <SmolderButton
                         variant="muted"
@@ -944,9 +918,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     )}
                     <textarea
                       value={details.competency ?? ""}
-                      onChange={(e) =>
-                        setDetails((d) => ({ ...d, competency: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        setDetails((d) => ({ ...d, competency: e.target.value }));
+                        scheduleAutoSave();
+                      }}
                       rows={4}
                       maxLength={2000}
                       placeholder="e.g. Describe the process of photosynthesis and explain its importance to living things."
@@ -956,59 +931,52 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
 
                 <div className="lf-panel space-y-2 p-3">
-                  <DetailInput
-                    label="Learning Area/s"
-                    value={details.learningArea ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
-                    placeholder="e.g. Science"
-                    maxLength={500}
-                  />
-                  <DetailInput
-                    label="Name of Teacher/s"
-                    value={details.teachers ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
-                    placeholder="Teacher name(s)"
-                    maxLength={500}
-                  />
-                  <DetailInput
-                    label="Position / Designation"
-                    value={details.position ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, position: v }))}
-                    placeholder="e.g. Teacher I"
-                    maxLength={200}
-                  />
-                  <DetailInput
-                    label="Grade Level and Section"
-                    value={details.gradeSection ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
-                    placeholder="e.g. Grade 7 - Sampaguita"
-                    maxLength={500}
-                  />
-                  <DetailInput
-                    label="No. of Sessions"
-                    value={details.sessions ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
-                    placeholder="e.g. 4"
-                    maxLength={200}
-                  />
-                  <DetailInput
-                    label="Date"
-                    value={details.date ?? ""}
-                    onChange={(v) => setDetails((d) => ({ ...d, date: v }))}
-                    placeholder="e.g. August 25, 2026"
-                    maxLength={100}
-                  />
-                  <SmolderButton
-                    variant="forge"
-                    onClick={saveDetails}
-                    disabled={busy !== null}
-                    className="w-full rounded-none px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
-                  >
-                    Save lesson details
-                  </SmolderButton>
+                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                    <DetailInput
+                      label="Learning Area/s"
+                      value={details.learningArea ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, learningArea: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. Science"
+                      maxLength={500}
+                    />
+                    <DetailInput
+                      label="Name of Teacher/s"
+                      value={details.teachers ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, teachers: v })); scheduleAutoSave(); }}
+                      placeholder="Teacher name(s)"
+                      maxLength={500}
+                    />
+                    <DetailInput
+                      label="Position / Designation"
+                      value={details.position ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, position: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. Teacher I"
+                      maxLength={200}
+                    />
+                    <DetailInput
+                      label="Grade Level and Section"
+                      value={details.gradeSection ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, gradeSection: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. Grade 7 - Sampaguita"
+                      maxLength={500}
+                    />
+                    <DetailInput
+                      label="No. of Sessions"
+                      value={details.sessions ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, sessions: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. 4"
+                      maxLength={200}
+                    />
+                    <DetailInput
+                      label="Date"
+                      value={details.date ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, date: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. August 25, 2026"
+                      maxLength={100}
+                    />
+                  </div>
                 </div>
               </section>
-              <div className="lg:col-span-2">{referencesBlock}</div>
             </div>
           )}
 
@@ -1040,9 +1008,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       <Spinner className="h-4 w-4" /> Generating…
                     </span>
                   ) : nb.result ? (
-                    "Regenerate plan"
+                    "Strike It Now !!!"
                   ) : (
-                    "Generate lesson plan"
+                    "Strike It Now !!!"
                   )}
                 </SmolderButton>
               </div>
