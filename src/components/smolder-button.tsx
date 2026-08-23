@@ -32,7 +32,7 @@ export default function SmolderButton({
   const sparkIdRef = useRef(0);
 
   const spawnSparks = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       const rect = btnRef.current?.getBoundingClientRect();
       if (!rect) return;
       const cx = e.clientX - rect.left;
@@ -59,7 +59,7 @@ export default function SmolderButton({
     [sparkCount],
   );
 
-  function handleClick(e: React.MouseEvent) {
+  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     if (disabled) return;
     spawnSparks(e);
     onClick?.(e);
