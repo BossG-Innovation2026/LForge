@@ -53,7 +53,7 @@ export default function CreateNotebookButton() {
             Creating…
           </span>
         ) : (
-          "Push mo yan"
+          "Smash it"
         )}
       </button>
       {error && (
