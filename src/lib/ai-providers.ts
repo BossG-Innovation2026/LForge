@@ -12,25 +12,25 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: "llama-3.3-70b-versatile",
-    name: "Llama 3.3 70B",
+    id: "openai/gpt-oss-120b",
+    name: "GPT-OSS 120B",
     provider: "groq",
     free: true,
     note: "Recommended · Free via Groq",
   },
   {
-    id: "llama3-8b-8192",
-    name: "Llama 3 8B",
+    id: "qwen/qwen3.6-27b",
+    name: "Qwen 3.6 27B",
+    provider: "groq",
+    free: true,
+    note: "Fast · Free via Groq",
+  },
+  {
+    id: "openai/gpt-oss-20b",
+    name: "GPT-OSS 20B",
     provider: "groq",
     free: true,
     note: "Fastest · Free via Groq",
-  },
-  {
-    id: "mixtral-8x7b-32768",
-    name: "Mixtral 8x7B",
-    provider: "groq",
-    free: true,
-    note: "Free via Groq",
   },
   {
     id: "gemini-3.6-flash",
@@ -90,7 +90,7 @@ export const AI_MODELS: AIModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL_ID = "llama-3.3-70b-versatile";
+export const DEFAULT_MODEL_ID = "openai/gpt-oss-120b";
 
 export function getModelById(id: string): AIModel | undefined {
   return AI_MODELS.find((m) => m.id === id);
