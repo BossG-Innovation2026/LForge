@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
       }
 
       const zipBytes = await buildZip(zipEntries);
-      const ab = zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength);
+      const ab = new ArrayBuffer(zipBytes.byteLength);
+      new Uint8Array(ab).set(zipBytes);
       return new NextResponse(ab, {
         headers: {
           "Content-Type": "application/zip",
