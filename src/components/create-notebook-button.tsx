@@ -37,7 +37,7 @@ export default function CreateNotebookButton() {
       <button
         onClick={handleClick}
         disabled={creating}
-        className="rounded-none bg-[#00ff9c] px-6 py-3 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] transition hover:bg-[#5cffbe] disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-none bg-[#00ff9c] px-8 py-4 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] transition hover:bg-[#5cffbe] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {creating ? (
           <span className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export default function CreateNotebookButton() {
             Creating…
           </span>
         ) : (
-          "+ New lesson plan"
+          "Push mo yan"
         )}
       </button>
       {error && (

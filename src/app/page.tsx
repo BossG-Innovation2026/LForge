@@ -23,7 +23,7 @@ export default function HomePage() {
         <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--lf-accent)]/60">
           &gt; Welcome
         </h2>
-        <p className="max-w-xl text-sm leading-relaxed text-zinc-300">
+        <p className="max-w-xl text-xs leading-relaxed text-zinc-300">
           LessonForge empowers Cabiao Senior High School faculty to generate fully compliant,
           classroom-ready lesson plans aligned with the ILAW Framework (DepEd Order No. 016, s. 2026).
           Powered by AI and grounded strictly in your selected Senior High School learning strands,
