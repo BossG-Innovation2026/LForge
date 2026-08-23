@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
       }
 
       const zipBytes = await buildZip(zipEntries);
-      return new NextResponse(zipBytes.buffer, {
+      const ab = zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength);
+      return new NextResponse(ab, {
         headers: {
           "Content-Type": "application/zip",
           "Content-Disposition": `attachment; filename="${base}.zip"`,
