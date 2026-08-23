@@ -94,7 +94,7 @@ export default function SmolderButton({
   };
 
   return (
-    <div className="relative inline-flex">
+    <div className="relative flex w-full">
       {/* Smolder glow - only for forge and danger */}
       {(variant === "forge" || variant === "danger") && (
         <>
