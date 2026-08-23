@@ -531,7 +531,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
   async function generateAll() {
     if (
-      approvedCount > 0 &&
+      activeApprovedCount > 0 &&
       !confirm("Regenerating will replace the plan and clear all approvals. Continue?")
     ) {
       return;

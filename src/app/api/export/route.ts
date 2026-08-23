@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         zipEntries.push({ name: `${base}-Session-${i + 1}.docx`, data: bytes });
       }
 
-      const zipBytes = buildZip(zipEntries);
+      const zipBytes = await buildZip(zipEntries);
       return new NextResponse(zipBytes, {
         headers: {
           "Content-Type": "application/zip",
