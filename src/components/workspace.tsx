@@ -925,7 +925,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       }}
                       rows={4}
                       maxLength={2000}
-                      placeholder="e.g. Describe the process of photosynthesis and explain its importance to living things."
+                      placeholder="Write here the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions."
                       className="lf-input resize-none"
                     />
                   </label>
