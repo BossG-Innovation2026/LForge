@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
 
     const instructions = body.instructions?.trim().slice(0, 4000) || undefined;
     const standards = notebook.details?.competency?.trim() || undefined;
+    const learnerContext = notebook.details?.learnerContext?.trim() || undefined;
     if (notebook.sources.length === 0) {
       return NextResponse.json(
         {
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
         feedback: body.feedback?.trim().slice(0, 2000),
         previousContent: previous?.content,
         standards,
+        learnerContext,
         modelId: body.modelId,
       });
 
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
       sections: generatable,
       instructions,
       standards,
+      learnerContext,
       modelId: body.modelId,
     });
 

@@ -405,6 +405,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       gradeSection: details.gradeSection ?? "",
       sessions: details.sessions ?? "",
       date: details.date ?? "",
+      learnerContext: details.learnerContext ?? "",
     });
   }
 
@@ -806,6 +807,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <DetailSummary label="Grade Level and Section" value={details.gradeSection} />
               <DetailSummary label="No. of Sessions" value={details.sessions} />
               <DetailSummary label="Date" value={details.date} />
+              <DetailSummary label="Learner Context" value={details.learnerContext} clamp />
               <SmolderButton
                 variant="forge"
                 onClick={generateAll}
@@ -974,6 +976,16 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       onChange={(v) => { setDetails((d) => ({ ...d, date: v })); scheduleAutoSave(); }}
                       placeholder="e.g. August 25, 2026"
                       maxLength={100}
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <DetailInput
+                      label="Learner Context"
+                      value={details.learnerContext ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, learnerContext: v })); scheduleAutoSave(); }}
+                      placeholder="Describe your learners' strengths, interests, recent performance, and possible barriers to learning."
+                      maxLength={2000}
+                      multiline
                     />
                   </div>
                 </div>

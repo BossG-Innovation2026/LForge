@@ -25,7 +25,7 @@ export const OFFICIAL_SECTIONS: OfficialSection[] = [
     id: "objectives",
     title: "Learning Objectives",
     guidance:
-      "Write the smaller knowledge, skills, or tasks from the competency that the learners will work on and be able to show by the end of the sessions.",
+      "Write exactly 3 sentences for the learning objectives: (1) Knowledge — what the learner will know or understand; (2) Skills — what the learner will be able to do or demonstrate; (3) Values — what the learner will appreciate, value, or internalize. Each sentence must be specific, measurable, and aligned with the competency.",
   },
   {
     id: "learner-context",

@@ -54,6 +54,7 @@ export interface NotebookDetails {
   gradeSection?: string;
   sessions?: string;
   date?: string;
+  learnerContext?: string;
 }
 
 export interface Notebook {

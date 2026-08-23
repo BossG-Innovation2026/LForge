@@ -146,6 +146,11 @@ export function standardsBlock(standards?: string): string {
   return `\n## NON-NEGOTIABLE LEARNING COMPETENCY & CURRICULUM STANDARDS\n"""\n${standards}\n"""\nThese standards are fixed by the teacher. Every section you write MUST align with them.\n`;
 }
 
+export function learnerContextBlock(context?: string): string {
+  if (!context) return "";
+  return `\n## LEARNER CONTEXT\n"""\n${context}\n"""\nUse this information to tailor activities, pacing, scaffolding, and assessment to the actual learners. Address their strengths, interests, and barriers in your plan.\n`;
+}
+
 export function sanitizeRefs(refs: unknown, valid: string[]): string[] {
   if (!Array.isArray(refs)) return [];
   const out = refs.filter((r): r is string => typeof r === "string" && valid.includes(r));
@@ -156,9 +161,10 @@ export function buildFullPlanPrompt(
   sources: SourceDoc[],
   sections: TemplateSection[],
   standards?: string,
-  instructions?: string
+  instructions?: string,
+  learnerContext?: string
 ): string {
-  return `${standardsBlock(standards)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  return `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
 ## LESSON PLAN TEMPLATE
 ${sections
   .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
@@ -181,13 +187,14 @@ export function buildSingleSectionPrompt(
   standards?: string,
   instructions?: string,
   feedback?: string,
-  previousContent?: string
+  previousContent?: string,
+  learnerContext?: string
 ): string {
   const target = sections.find((s) => s.id === targetSectionId);
   if (!target) throw new Error(`Unknown section "${targetSectionId}".`);
   const others = sections.filter((s) => s.id !== targetSectionId);
 
-  return `${standardsBlock(standards)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  return `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
 ## LESSON PLAN OUTLINE (other sections, for context)
 ${others.map((s) => `- ${s.title}`).join("\n") || "(none)"}
 
@@ -363,6 +370,7 @@ interface FullPlanArgs {
   sections: TemplateSection[];
   instructions?: string;
   standards?: string;
+  learnerContext?: string;
   modelId?: string;
 }
 
@@ -371,10 +379,11 @@ export async function generateFullPlan({
   sections,
   instructions,
   standards,
+  learnerContext,
   modelId = DEFAULT_MODEL_ID,
 }: FullPlanArgs): Promise<PlanSection[]> {
   const refs = refIds(sources);
-  const prompt = buildFullPlanPrompt(sources, sections, standards, instructions);
+  const prompt = buildFullPlanPrompt(sources, sections, standards, instructions, learnerContext);
   const data = (await callModel(modelId, prompt)) as {
     sections?: Array<{
       sectionId?: unknown;
@@ -416,6 +425,7 @@ export async function generateFullPlan({
           targetSectionId: section.id,
           instructions,
           standards,
+          learnerContext,
           modelId,
         })
       );
@@ -432,6 +442,7 @@ interface SingleSectionArgs {
   feedback?: string;
   previousContent?: string;
   standards?: string;
+  learnerContext?: string;
   modelId?: string;
 }
 
@@ -443,6 +454,7 @@ export async function generateSingleSection({
   feedback,
   previousContent,
   standards,
+  learnerContext,
   modelId = DEFAULT_MODEL_ID,
 }: SingleSectionArgs): Promise<PlanSection> {
   const target = sections.find((s) => s.id === targetSectionId);
@@ -456,7 +468,8 @@ export async function generateSingleSection({
     standards,
     instructions,
     feedback,
-    previousContent
+    previousContent,
+    learnerContext
   );
 
   const data = (await callModel(modelId, prompt)) as {
