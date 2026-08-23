@@ -348,7 +348,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             body: JSON.stringify({ sources }),
           }
         );
-        setNb(data.notebook);
+        setNb((prev) => ({ ...prev, sources: data.notebook.sources, template: data.notebook.template }));
         if (data.errors?.length) localWarnings.push(...data.errors);
       }
       setWarnings(localWarnings);
@@ -374,7 +374,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           body: JSON.stringify({ url }),
         }
       );
-      setNb(data.notebook);
+      setNb((prev) => ({ ...prev, sources: data.notebook.sources }));
       setLinkUrl("");
       setShowLinkInput(false);
     } catch (err) {
@@ -390,7 +390,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       await apiCall<undefined>(`/api/notebooks/${nb.id}/sources/${sourceId}`, {
         method: "DELETE",
       });
-      await reload();
+      setNb((prev) => ({ ...prev, sources: prev.sources.filter((s) => s.id !== sourceId) }));
     } catch (err) {
       fail(err);
     }
