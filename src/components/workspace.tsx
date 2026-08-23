@@ -989,7 +989,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 onChange={(e) => setInstructions(e.target.value)}
                 rows={2}
                 maxLength={4000}
-                placeholder="Extra guidance for generation (optional): duration of the period, class profile, tone, things to emphasize…"
+                placeholder="Write your specific instructions and add-on."
                 className="lf-input resize-none px-3 py-2 !text-sm"
               />
               <div className="mt-3 flex items-center justify-between gap-4">
