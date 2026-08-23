@@ -904,8 +904,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 {busy === "export"
                   ? "Preparing…"
                   : allApproved
-                    ? "Get it now!"
-                    : "Get it now!"}
+                    ? "Gotcha"
+                    : "Gotcha"}
               </SmolderButton>
               {nb.result && !allApproved && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
