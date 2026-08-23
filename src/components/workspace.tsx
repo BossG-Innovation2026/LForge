@@ -762,11 +762,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     className="group flex items-center gap-2 rounded-none border px-3 py-2"
                     style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
                   >
-                    <span className="shrink-0 text-sm" style={{ color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>&#128196;</span>
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
+                    <span className="shrink-0 text-sm" style={{ color: "var(--lf-accent)" }}>&#128196;</span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: "var(--lf-fg)" }}>
                       {s.name}
                     </span>
-                    <span className="shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
+                    <span className="shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)", color: "var(--lf-accent)" }}>
                       {s.kind}
                     </span>
                     <SmolderButton
@@ -795,11 +795,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     className="group flex items-center gap-2 rounded-none border px-3 py-2"
                     style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
                   >
-                    <span className="shrink-0 text-sm" style={{ color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>&#128279;</span>
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
+                    <span className="shrink-0 text-sm" style={{ color: "var(--lf-accent)" }}>&#128279;</span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: "var(--lf-fg)" }}>
                       {s.url ? (
-                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--lf-accent)]">
-                          {s.name}
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {s.url}
                         </a>
                       ) : s.name}
                     </span>
