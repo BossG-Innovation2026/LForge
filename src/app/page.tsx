@@ -10,7 +10,7 @@ export default function HomePage() {
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none border border-[var(--lf-accent)]/60 bg-[var(--lf-accent)]/10 font-mono text-sm font-bold text-[var(--lf-accent)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
             LF
           </span>
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center text-left">
             <h1 className="font-mono text-2xl font-bold uppercase leading-none tracking-[0.18em]" style={{ color: "var(--lf-fg)" }}>
               LessonForge
             </h1>
