@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getNotebook } from "@/lib/store";
 import Workspace from "@/components/workspace";
+import TicketGate from "@/components/ticket-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,10 @@ export default async function NotebookPage({
     notFound();
   }
   return (
-    <div className="flex h-screen flex-col">
-      <Workspace initialNotebook={notebook} />
-    </div>
+    <TicketGate>
+      <div className="flex h-screen flex-col">
+        <Workspace initialNotebook={notebook} />
+      </div>
+    </TicketGate>
   );
 }
