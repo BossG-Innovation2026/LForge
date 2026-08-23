@@ -23,34 +23,17 @@ export default function HomePage() {
       </header>
 
       <section className="lf-panel lf-frame relative w-full p-8">
-        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--lf-accent)]/60">
-          &gt; Welcome
-        </h2>
-        <p className="max-w-xl text-xs leading-relaxed text-zinc-300">
-          Forged by AI. Sharpened by Teachers&apos; Expertise.
-        </p>
-        <p className="max-w-xl text-xs leading-relaxed text-zinc-400 mt-2">
+        <p className="max-w-xl text-xs leading-relaxed text-zinc-400">
           Tempered in the fires of the ILAW Framework (DepEd Order No. 016, s. 2026).
           Mined from the ore you provide. From Intentions to Ways Forward, every draft
           is precision-forged and awaits your final strike.
         </p>
+        <p className="max-w-xl text-xs leading-relaxed text-[var(--lf-accent)]/70 mt-3 font-semibold">
+          Forged by AI. Sharpened by Teachers&apos; Expertise.
+        </p>
         <p className="max-w-xl text-xs leading-relaxed text-[var(--lf-accent)]/70 mt-2 font-semibold">
           Retain absolute pedagogical authority: Review. Refine. Approve.
         </p>
-        <ul className="mt-4 space-y-1.5 font-mono text-[11px] text-zinc-500">
-          <li className="flex items-center gap-2">
-            <span className="text-[var(--lf-accent)]/60">→</span> Follows the official ILAW lesson plan sections
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-[var(--lf-accent)]/60">→</span> Each session is private — vanishes after you download your plan
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-[var(--lf-accent)]/60">→</span> No account required
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-[var(--lf-accent)]/60">→</span> Multiple free AI providers supported
-          </li>
-        </ul>
         <div className="mt-6">
           <CreateNotebookButton />
         </div>
