@@ -25,7 +25,7 @@ export const OFFICIAL_SECTIONS: OfficialSection[] = [
     id: "objectives",
     title: "Learning Objectives",
     guidance:
-      "Write exactly 3 sentences for the learning objectives: (1) Knowledge — what the learner will know or understand; (2) Skills — what the learner will be able to do or demonstrate; (3) Values — what the learner will appreciate, value, or internalize. Each sentence must be specific, measurable, and aligned with the competency.",
+      "Write exactly 3 bullet points: (1) Knowledge — what learners will know; (2) Skills — what learners will do; (3) Values — what learners will appreciate. Keep each to 1 sentence. Use '- ' prefix for each.",
   },
   {
     id: "learner-context",
