@@ -940,7 +940,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
               className="lf-input w-full px-2 py-1.5 !text-xl font-bold"
               aria-label="Specific topic of the lesson"
-              placeholder="Write your specific topic here"
+              placeholder="Title"
             />
             <div className="flex shrink-0 flex-col items-end gap-1">
               <SmolderButton
