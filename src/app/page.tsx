@@ -28,12 +28,6 @@ export default function HomePage() {
           Mined from the ore you provide. From Intentions to Ways Forward, every draft
           is precision-forged and awaits your final strike.
         </p>
-        <p className="max-w-xl text-xs leading-relaxed text-[var(--lf-accent)]/70 mt-3 font-semibold">
-          Forged by AI. Sharpened by Teachers&apos; Expertise.
-        </p>
-        <p className="max-w-xl text-xs leading-relaxed text-[var(--lf-accent)]/70 mt-2 font-semibold">
-          Retain absolute pedagogical authority: Review. Refine. Approve.
-        </p>
         <div className="mt-6">
           <CreateNotebookButton />
         </div>
