@@ -24,25 +24,15 @@ export default function HomePage() {
           &gt; Welcome
         </h2>
         <p className="max-w-xl text-sm leading-relaxed text-zinc-300">
-          LessonForge helps Filipino teachers create lesson plans aligned with the{" "}
-          <span className="font-semibold" style={{ color: "var(--lf-accent)" }}>
-            ILAW Framework
-          </span>{" "}
-          under DepEd Order No. 016, s. 2026 — the official replacement for the DLL and DLP.
-          Add your reference materials, set your learning competency, and LessonForge
-          drafts every ILAW section for you to review, refine, and approve before export.
+          LessonForge empowers Cabiao Senior High School faculty to generate fully compliant,
+          classroom-ready lesson plans aligned with the ILAW Framework (DepEd Order No. 016, s. 2026).
+          Powered by AI and grounded strictly in your selected Senior High School learning strands,
+          DepEd modules, and local reference materials, LessonForge eliminates the unverified,
+          conflicting content found across general web searches. Every section—from Intentions to
+          Ways Forward—is produced as an editable draft, ensuring that Cabiao SHS teachers retain
+          full pedagogical control to review, refine, and approve every plan before stepping into
+          the classroom.
         </p>
-        <div className="mt-4 rounded-none border border-[var(--lf-accent)]/15 bg-[var(--lf-accent)]/5 px-4 py-3">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--lf-accent)]/70 mb-1.5">
-            About ILAW
-          </p>
-          <p className="text-xs leading-relaxed text-zinc-400">
-            ILAW (Inihanda, Laging Handa, Abot-Kaya, Wasto) replaces the traditional DLL and DLP
-            with a streamlined, flexible planning system designed to reduce teacher paperwork
-            while keeping lesson quality high. DO 016 s.2026 makes ILAW the standard for
-            all public school teachers nationwide.
-          </p>
-        </div>
         <ul className="mt-4 space-y-1.5 font-mono text-[11px] text-zinc-500">
           <li className="flex items-center gap-2">
             <span className="text-[var(--lf-accent)]/60">→</span> Follows the official ILAW lesson plan sections
