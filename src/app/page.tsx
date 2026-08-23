@@ -27,7 +27,7 @@ export default function HomePage() {
                 <span className="smoke-p" style={{ left: "10%", animationDelay: "2.8s" }} />
               </div>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">BossG Innovations 2026</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">BOSS-G INNOVATIONS &copy; 2026</p>
           </div>
         </div>
         <p className="font-mono text-xs tracking-wide text-zinc-500">
