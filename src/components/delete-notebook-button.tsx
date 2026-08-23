@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import SmolderButton from "@/components/smolder-button";
 
 export default function DeleteNotebookButton({ id }: { id: string }) {
   const router = useRouter();
@@ -17,13 +18,14 @@ export default function DeleteNotebookButton({ id }: { id: string }) {
   }
 
   return (
-    <button
+    <SmolderButton
+      variant="danger"
       onClick={handleDelete}
       disabled={deleting || pending}
       aria-label="Delete lesson plan"
-      className="rounded-none border border-transparent px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-zinc-500 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+      className="rounded-none border border-transparent px-3 py-1.5 font-mono text-xs uppercase tracking-wider"
     >
       {deleting || pending ? "…" : "Delete"}
-    </button>
+    </SmolderButton>
   );
 }

@@ -27,21 +27,22 @@ export default function HomePage() {
           &gt; Welcome
         </h2>
         <p className="max-w-xl text-xs leading-relaxed text-zinc-300">
-          LessonForge empowers Cabiao Senior High School faculty to generate fully compliant,
-          classroom-ready lesson plans aligned with the ILAW Framework (DepEd Order No. 016, s. 2026).
-          Powered by AI and grounded strictly in your selected Senior High School learning strands,
-          DepEd modules, and local reference materials, LessonForge eliminates the unverified,
-          conflicting content found across general web searches. Every section—from Intentions to
-          Ways Forward—is produced as an editable draft, ensuring that Cabiao SHS teachers retain
-          full pedagogical control to review, refine, and approve every plan before stepping into
-          the classroom.
+          Forged by AI. Sharpened by Teachers&apos; Expertise.
+        </p>
+        <p className="max-w-xl text-xs leading-relaxed text-zinc-400 mt-2">
+          Tempered in the fires of the ILAW Framework (DepEd Order No. 016, s. 2026).
+          Mined from the ore you provide. From Intentions to Ways Forward, every draft
+          is precision-forged and awaits your final strike.
+        </p>
+        <p className="max-w-xl text-xs leading-relaxed text-[var(--lf-accent)]/70 mt-2 font-semibold">
+          Retain absolute pedagogical authority: Review. Refine. Approve.
         </p>
         <ul className="mt-4 space-y-1.5 font-mono text-[11px] text-zinc-500">
           <li className="flex items-center gap-2">
             <span className="text-[var(--lf-accent)]/60">→</span> Follows the official ILAW lesson plan sections
           </li>
           <li className="flex items-center gap-2">
-            <span className="text-[var(--lf-accent)]/60">→</span> Each session is private and disappears after you download your plan
+            <span className="text-[var(--lf-accent)]/60">→</span> Each session is private — vanishes after you download your plan
           </li>
           <li className="flex items-center gap-2">
             <span className="text-[var(--lf-accent)]/60">→</span> No account required

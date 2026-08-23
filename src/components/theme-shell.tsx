@@ -13,7 +13,7 @@ import {
 import ForgeBackground from "@/components/forge-background";
 
 export default function ThemeShell({ children }: { children: React.ReactNode }) {
-  const [themeId, setThemeId] = useState<ThemeId>("matrix");
+  const [themeId, setThemeId] = useState<ThemeId>("forge");
 
   useEffect(() => {
     const id = loadSavedTheme();
@@ -40,13 +40,13 @@ export default function ThemeShell({ children }: { children: React.ReactNode }) 
       <style>{`
         body::before {
           background-image:
-            linear-gradient(var(--lf-grid, rgba(0,255,156,0.05)) 1px, transparent 1px),
-            linear-gradient(90deg, var(--lf-grid, rgba(0,255,156,0.05)) 1px, transparent 1px);
+            linear-gradient(var(--lf-grid, rgba(255,106,0,0.06)) 1px, transparent 1px),
+            linear-gradient(90deg, var(--lf-grid, rgba(255,106,0,0.06)) 1px, transparent 1px);
         }
         body::after {
           background:
-            radial-gradient(700px 420px at 12% -6%, var(--lf-glow-a, rgba(0,255,156,0.11)), transparent 70%),
-            radial-gradient(560px 380px at 96% 108%, var(--lf-glow-b, rgba(0,255,156,0.06)), transparent 70%);
+            radial-gradient(700px 420px at 12% -6%, var(--lf-glow-a, rgba(255,106,0,0.12)), transparent 70%),
+            radial-gradient(560px 380px at 96% 108%, var(--lf-glow-b, rgba(255,60,0,0.07)), transparent 70%);
         }
         [data-theme="chalk"] body::before { opacity: 0.6; }
         [data-theme="chalk"] .lf-panel { background: rgba(248,250,252,0.9); border-color: rgba(29,78,216,0.18); }

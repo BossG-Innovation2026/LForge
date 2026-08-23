@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SmolderButton from "@/components/smolder-button";
 
 export type ThemeId =
+  | "forge"
   | "matrix"
   | "midnight"
   | "aurora"
@@ -24,6 +26,18 @@ export interface Theme {
 }
 
 export const THEMES: Theme[] = [
+  {
+    id: "forge",
+    name: "Forge",
+    description: "Flame-dark, smoldering iron",
+    accent: "#ff6a00",
+    bg: "#0a0400",
+    fg: "#f5e6d0",
+    line: "rgba(255,106,0,0.15)",
+    gridColor: "rgba(255,106,0,0.06)",
+    glowA: "rgba(255,106,0,0.12)",
+    glowB: "rgba(255,60,0,0.07)",
+  },
   {
     id: "matrix",
     name: "Matrix",
@@ -99,7 +113,7 @@ export const THEMES: Theme[] = [
 ];
 
 const STORAGE_KEY = "lf-theme";
-export const DEFAULT_THEME_ID: ThemeId = "matrix";
+export const DEFAULT_THEME_ID: ThemeId = "forge";
 
 export function getTheme(id: ThemeId): Theme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
@@ -153,8 +167,9 @@ export function ThemePicker({
 
   return (
     <div className="relative">
-      <button
+      <SmolderButton
         type="button"
+        variant="ghost"
         onClick={() => setOpen((o) => !o)}
         title="Change theme"
         className="flex items-center gap-1.5 rounded-none border border-[var(--lf-accent)]/25 px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-[var(--lf-accent)]/70 transition hover:border-[var(--lf-accent)]/60 hover:bg-[var(--lf-accent)]/8 hover:text-[var(--lf-accent)]"
@@ -164,7 +179,7 @@ export function ThemePicker({
           <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
         </svg>
         {getTheme(current).name}
-      </button>
+      </SmolderButton>
 
       {open && (
         <>
@@ -176,9 +191,10 @@ export function ThemePicker({
               </p>
             </div>
             {THEMES.map((theme) => (
-              <button
+              <SmolderButton
                 key={theme.id}
                 type="button"
+                variant="ghost"
                 onClick={() => {
                   onChange(theme.id);
                   setOpen(false);
@@ -198,7 +214,7 @@ export function ThemePicker({
                   </p>
                   <p className="font-mono text-[10px] text-zinc-500">{theme.description}</p>
                 </div>
-              </button>
+              </SmolderButton>
             ))}
           </div>
         </>

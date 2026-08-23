@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
 import { extractText, SOURCE_ACCEPT } from "@/lib/client-extract";
 import { AI_MODELS, DEFAULT_MODEL_ID, getProviderLabel, type AIModel } from "@/lib/ai-providers";
+import SmolderButton from "@/components/smolder-button";
 
 const COMPETENCY_SECTION_ID = "sec-1";
 
@@ -27,31 +28,9 @@ function Spinner({ className = "" }: { className?: string }) {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#00ff9c]/60">
+    <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: `color-mix(in srgb, var(--lf-accent), transparent 40%)` }}>
       {children}
     </h2>
-  );
-}
-
-function GhostButton({
-  onClick,
-  disabled,
-  children,
-  className = "",
-}: {
-  onClick?: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-none border border-[#00ff9c]/25 px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-emerald-300 transition hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -208,7 +187,8 @@ function ModelSelector({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
-        className="flex w-full items-center justify-between gap-2 rounded-none border border-[#00ff9c]/20 bg-[#00ff9c]/3 px-2.5 py-1.5 text-left transition hover:border-[#00ff9c]/50 disabled:opacity-50"
+        className="flex w-full items-center justify-between gap-2 rounded-none border px-2.5 py-1.5 text-left transition disabled:opacity-50"
+        style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 97%)" }}
       >
         <div className="min-w-0">
           <p className="truncate font-mono text-xs font-medium text-emerald-100">
@@ -217,7 +197,7 @@ function ModelSelector({
           <p className="font-mono text-[10px] text-zinc-500">
             {getProviderLabel(current.provider)}
             {current.free && (
-              <span className="ml-1.5 border border-[#00ff9c]/30 bg-[#00ff9c]/8 px-1 py-px text-[#00ff9c]/70">
+              <span className="ml-1.5 border px-1 py-px" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 70%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 92%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
                 free
               </span>
             )}
@@ -233,11 +213,11 @@ function ModelSelector({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border border-[#00ff9c]/25 bg-[#050807] shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border shadow-[0_8px_32px_rgba(0,0,0,0.6)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "var(--lf-bg)" }}>
           {PROVIDER_GROUPS.map(([provider, models]) => (
             <div key={provider}>
-              <div className="border-b border-[#00ff9c]/10 bg-[#00ff9c]/5 px-2.5 py-1">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[#00ff9c]/60">
+              <div className="border-b px-2.5 py-1" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
+                <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: "color-mix(in srgb, var(--lf-accent), transparent 40%)" }}>
                   {getProviderLabel(provider as AIModel["provider"])}
                 </span>
               </div>
@@ -249,9 +229,10 @@ function ModelSelector({
                     onChange(m.id);
                     setOpen(false);
                   }}
-                  className={`flex w-full items-start justify-between gap-2 px-2.5 py-2 text-left transition hover:bg-[#00ff9c]/8 ${
-                    m.id === value ? "bg-[#00ff9c]/10" : ""
+                  className={`flex w-full items-start justify-between gap-2 px-2.5 py-2 text-left transition ${
+                    m.id === value ? "bg-[var(--lf-accent)]/10" : ""
                   }`}
+                  style={{ "--tw-bg-opacity": 0.1 } as React.CSSProperties}
                 >
                   <div className="min-w-0">
                     <p className="truncate font-mono text-xs text-emerald-100">{m.name}</p>
@@ -260,7 +241,7 @@ function ModelSelector({
                     )}
                   </div>
                   {m.free && (
-                    <span className="mt-0.5 shrink-0 border border-[#00ff9c]/30 bg-[#00ff9c]/8 px-1 py-px font-mono text-[10px] text-[#00ff9c]/70">
+                    <span className="mt-0.5 shrink-0 border px-1 py-px font-mono text-[10px]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 70%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 92%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
                       free
                     </span>
                   )}
@@ -669,17 +650,19 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       <div className="mb-2 flex items-center justify-between">
         <SectionHeading>References ({nb.sources.length})</SectionHeading>
         <div className="flex items-center gap-1">
-          <button
+          <SmolderButton
+            variant="muted"
             onClick={() => setShowLinkInput((v) => !v)}
             disabled={busy !== null}
-            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/10 disabled:opacity-50"
+            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
           >
             + Link
-          </button>
-          <button
+          </SmolderButton>
+          <SmolderButton
+            variant="muted"
             onClick={() => sourceInputRef.current?.click()}
             disabled={busy !== null}
-            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/10 disabled:opacity-50"
+            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
           >
             {busy === "sources" ? (
               <span className="flex items-center gap-1.5">
@@ -688,7 +671,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             ) : (
               "+ Files"
             )}
-          </button>
+          </SmolderButton>
         </div>
       </div>
 
@@ -703,19 +686,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             className="lf-input min-w-0 flex-1"
             disabled={busy === "link"}
           />
-          <button
+          <SmolderButton
+            variant="forge"
             onClick={addLink}
             disabled={!linkUrl.trim() || busy === "link"}
-            className="shrink-0 rounded-none border border-[#00ff9c]/40 bg-[#00ff9c]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/20 disabled:opacity-40"
+            className="shrink-0 rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
           >
             {busy === "link" ? <Spinner className="h-3 w-3" /> : "Add"}
-          </button>
-          <button
+          </SmolderButton>
+          <SmolderButton
+            variant="muted"
             onClick={() => { setShowLinkInput(false); setLinkUrl(""); }}
-            className="shrink-0 rounded-none px-1.5 py-1 font-mono text-[11px] text-zinc-500 hover:text-zinc-300"
+            className="shrink-0 rounded-none px-1.5 py-1 font-mono text-[11px]"
           >
             ✕
-          </button>
+          </SmolderButton>
         </div>
       )}
 
@@ -732,31 +717,33 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           {nb.sources.map((s) => (
             <li
               key={s.id}
-              className="group flex items-center gap-2 rounded-none border border-[#00ff9c]/15 bg-[#0a0f0c]/80 px-3 py-2"
+              className="group flex items-center gap-2 rounded-none border px-3 py-2"
+              style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
             >
               <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
                 {s.url ? (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#00ff9c]">
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--lf-accent)]">
                     {s.name}
                   </a>
                 ) : s.name}
               </span>
-              <span className="shrink-0 border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-[#00ff9c]/70">
+              <span className="shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
                 {s.kind}
               </span>
-              <button
+              <SmolderButton
+                variant="danger"
                 onClick={() => removeSource(s.id)}
                 disabled={busy !== null}
                 aria-label={`Remove ${s.name}`}
-                className="shrink-0 text-xs text-zinc-600 transition hover:text-red-400 disabled:opacity-50"
+                className="shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[11px]"
               >
                 ✕
-              </button>
+              </SmolderButton>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rounded-none border border-dashed border-[#00ff9c]/20 bg-transparent px-3 py-4 text-center text-xs text-zinc-500">
+        <p className="rounded-none border border-dashed px-3 py-4 text-center text-xs text-zinc-500" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)" }}>
           Add reference files or web links to ground the lesson plan.
         </p>
       )}
@@ -766,7 +753,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   return (
     <div className="flex min-h-0 w-full flex-1">
       {/* Sidebar */}
-      <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r border-[#00ff9c]/15 bg-black/40 p-4">
+      <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r p-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "rgba(0,0,0,0.4)" }}>
         {!showDetailsForm && referencesBlock}
 
         {/* Format */}
@@ -781,13 +768,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             <p className="mt-0.5 font-mono text-[11px] tracking-wide text-zinc-500">
               DO 016 s.2026 · replaces DLL &amp; DLP
             </p>
-            <ol className="mt-2 space-y-1 border-l border-[#00ff9c]/25 pl-3">
+            <ol className="mt-2 space-y-1 border-l pl-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)" }}>
               {nb.template?.sections.map((section) => (
                 <li
                   key={section.id}
                   className={`text-xs leading-snug ${
                     section.id === COMPETENCY_SECTION_ID
-                      ? "font-medium text-[#00ff9c]"
+                      ? "font-medium text-[var(--lf-accent)]"
                       : "text-zinc-400"
                   }`}
                 >
@@ -818,12 +805,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           <section>
             <div className="mb-2 flex items-center justify-between">
               <SectionHeading>Lesson details</SectionHeading>
-              <GhostButton
+              <SmolderButton
+                variant="ghost"
                 onClick={() => setDetailsEditing(true)}
                 disabled={busy !== null}
+                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
               >
                 Edit
-              </GhostButton>
+              </SmolderButton>
             </div>
             <div className="lf-panel space-y-2 p-3">
               <DetailSummary
@@ -837,10 +826,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <DetailSummary label="Grade Level and Section" value={details.gradeSection} />
               <DetailSummary label="No. of Sessions" value={details.sessions} />
               <DetailSummary label="Date" value={details.date} />
-              <button
+              <SmolderButton
+                variant="forge"
                 onClick={generateAll}
                 disabled={!canGenerate}
-                className="w-full rounded-none border border-[#00ff9c]/30 bg-transparent px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-emerald-300 transition hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-none px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
               >
                 {busy === "generate" ? (
                   <span className="flex items-center justify-center gap-1.5">
@@ -849,7 +839,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 ) : (
                   "Regenerate plan"
                 )}
-              </button>
+              </SmolderButton>
             </div>
           </section>
         )}
@@ -866,12 +856,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </li>
               ))}
             </ul>
-            <button
+            <SmolderButton
+              variant="muted"
               onClick={() => setWarnings([])}
-              className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-amber-400 underline"
+              className="mt-1.5 rounded-none px-0 py-0 font-mono text-[11px] uppercase tracking-wider text-amber-400 underline"
             >
               Dismiss
-            </button>
+            </SmolderButton>
           </div>
         )}
       </aside>
@@ -889,7 +880,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               aria-label="Lesson plan title"
             />
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <button
+              <SmolderButton
+                variant="forge"
                 onClick={exportDocx}
                 disabled={!nb.result || !allApproved || busy !== null}
                 title={
@@ -897,18 +889,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     ? `${approvedCount} of ${totalSections} sections ready`
                     : undefined
                 }
-                className={`shrink-0 rounded-none px-4 py-2 font-mono text-sm font-semibold uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  allApproved
-                    ? "bg-[#00ff9c] text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] hover:bg-[#5cffbe]"
-                    : "border border-[#00ff9c]/30 bg-transparent text-emerald-300 hover:border-[#00ff9c]/60 hover:text-[#00ff9c]"
-                }`}
+                className="shrink-0 rounded-none px-4 py-2 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {busy === "export"
                   ? "Preparing…"
                   : allApproved
                     ? "Download final lesson plan"
                     : "Export DOCX"}
-              </button>
+              </SmolderButton>
               {nb.result && !allApproved && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
                   {approvedCount} of {totalSections} ready
@@ -925,18 +913,19 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   <SectionHeading>Lesson details</SectionHeading>
                   <div className="flex items-center gap-3">
                     {detailsSaved && (
-                      <span className="font-mono text-[11px] uppercase tracking-wider text-[#00ff9c]">
+                      <span className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "var(--lf-accent)" }}>
                         Saved ✓
                       </span>
                     )}
                     {nb.result && (
-                      <button
+                      <SmolderButton
+                        variant="muted"
                         onClick={backToPlan}
                         disabled={busy !== null}
-                        className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-white/5 hover:text-zinc-200 disabled:opacity-50"
+                        className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
                       >
                         ← Back to plan
-                      </button>
+                      </SmolderButton>
                     )}
                   </div>
                 </div>
@@ -944,7 +933,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 {/* Competency - required */}
                 <div className="lf-panel lf-frame relative mb-2 p-3">
                   <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
                       Learning Competency &amp; Curriculum Standards{" "}
                       <span aria-hidden="true">*</span>
                     </span>
@@ -1009,13 +998,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     placeholder="e.g. August 25, 2026"
                     maxLength={100}
                   />
-                  <button
+                  <SmolderButton
+                    variant="forge"
                     onClick={saveDetails}
                     disabled={busy !== null}
-                    className="w-full rounded-none bg-[#00ff9c] px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-black shadow-[0_0_16px_rgba(0,255,156,0.2)] transition hover:bg-[#5cffbe] disabled:opacity-50"
+                    className="w-full rounded-none px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
                   >
                     Save lesson details
-                  </button>
+                  </SmolderButton>
                 </div>
               </section>
               <div className="lg:col-span-2">{referencesBlock}</div>
@@ -1039,10 +1029,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     ? "No references yet - the plan will rely on pedagogy only."
                     : undefined)}
                 </p>
-                <button
+                <SmolderButton
+                  variant="forge"
                   onClick={generateAll}
                   disabled={!canGenerate}
-                  className="shrink-0 rounded-none bg-[#00ff9c] px-5 py-2 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] transition hover:bg-[#5cffbe] disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+                  className="shrink-0 rounded-none px-5 py-2 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
                 >
                   {busy === "generate" ? (
                     <span className="flex items-center gap-2">
@@ -1053,7 +1044,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   ) : (
                     "Generate lesson plan"
                   )}
-                </button>
+                </SmolderButton>
               </div>
             </div>
           )}
@@ -1065,12 +1056,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 Error
               </p>
               <p className="mt-1 text-[13px] leading-snug text-red-300">{error}</p>
-              <button
+              <SmolderButton
+                variant="muted"
                 onClick={() => setError(null)}
-                className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-red-400 underline"
+                className="mt-1.5 rounded-none px-0 py-0 font-mono text-[11px] uppercase tracking-wider text-red-400 underline"
               >
                 Dismiss
-              </button>
+              </SmolderButton>
             </div>
           )}
 
@@ -1086,13 +1078,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </p>
                 <div className="flex shrink-0 items-center gap-2">
                   {unapprovedWithContent.length > 0 && (
-                    <button
+                    <SmolderButton
+                      variant="forge"
                       onClick={approveAll}
                       disabled={generating || busy !== null}
-                      className="rounded-none border border-[#00ff9c]/40 bg-[#00ff9c]/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/20 disabled:opacity-40"
+                      className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                     >
                       Approve all
-                    </button>
+                    </SmolderButton>
                   )}
                   <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">
                     {approvedCount}/{totalSections} ready
@@ -1104,13 +1097,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 aria-valuemin={0}
                 aria-valuemax={totalSections}
                 aria-valuenow={approvedCount}
-                className="h-1.5 w-full overflow-hidden rounded-none bg-[#00ff9c]/10"
+                className="h-1.5 w-full overflow-hidden rounded-none"
+                style={{ backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}
               >
                 <div
                   className={`h-full transition-all duration-300 ${
                     allApproved
-                      ? "bg-[#00ff9c] shadow-[0_0_12px_rgba(0,255,156,0.7)]"
-                      : "bg-[#00ff9c]/50"
+                      ? "bg-[var(--lf-accent)] shadow-[0_0_12px_rgba(0,255,156,0.7)]"
+                      : "bg-[var(--lf-accent)]/50"
                   }`}
                   style={{ width: `${totalSections ? (approvedCount / totalSections) * 100 : 0}%` }}
                 />
@@ -1125,16 +1119,17 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   return (
                     <article
                       key={section.sectionId}
-                      className="lf-panel lf-frame relative border-[#00ff9c]/40 p-5 shadow-[0_0_30px_rgba(0,255,156,0.07)]"
+                      className="lf-panel lf-frame relative border p-5 shadow-[0_0_30px_rgba(0,255,156,0.07)]"
+                      style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 60%)" }}
                     >
                       <div className="mb-3 flex items-start justify-between gap-3">
                         <h2 className="font-semibold text-emerald-50">{section.title}</h2>
-                        <span className="shrink-0 border border-[#00ff9c]/50 bg-[#00ff9c]/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                        <span className="shrink-0 border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
                           Teacher standard · locked
                         </span>
                       </div>
                       <ContentBody content={section.content} />
-                      <p className="mt-3 border-t border-[#00ff9c]/15 pt-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+                      <p className="mt-3 border-t pt-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
                         Authored by you in Lesson details - the AI builds every other section on this standard.
                       </p>
                     </article>
@@ -1144,30 +1139,34 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 return (
                   <article
                     key={section.sectionId}
-                    className={`rounded-none border bg-[#0a0f0c]/80 p-5 shadow-sm transition-colors ${
+                    className={`rounded-none border p-5 shadow-sm transition-colors ${
                       isApproved
-                        ? "border-[#00ff9c]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
-                        : "border-[#00ff9c]/15"
+                        ? "border-[var(--lf-accent)]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
+                        : "border-[var(--lf-accent)]/15"
                     }`}
+                    style={{ backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <h2 className="font-semibold text-emerald-50">{section.title}</h2>
                       <div className="flex shrink-0 items-center gap-2">
                         {isApproved ? (
                           <>
-                            <span className="border border-[#00ff9c]/50 bg-[#00ff9c]/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                            <span className="border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
                               Approved ✓
                             </span>
-                            <GhostButton
+                            <SmolderButton
+                              variant="ghost"
                               onClick={() => approveSection(section.sectionId)}
                               disabled={generating}
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
                             >
                               Un-approve
-                            </GhostButton>
+                            </SmolderButton>
                           </>
                         ) : (
                           <>
-                            <button
+                            <SmolderButton
+                              variant="muted"
                               onClick={() => {
                                 if (isEditingThis) {
                                   setEditingSection(null);
@@ -1179,11 +1178,12 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                                 }
                               }}
                               disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:opacity-40"
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
                             >
                               {isEditingThis ? "Cancel edit" : "Edit"}
-                            </button>
-                            <button
+                            </SmolderButton>
+                            <SmolderButton
+                              variant="muted"
                               onClick={() => {
                                 setFeedbackFor(
                                   feedbackFor === section.sectionId ? null : section.sectionId
@@ -1192,30 +1192,32 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                                 setEditingSection(null);
                               }}
                               disabled={generating}
-                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:opacity-40"
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
                             >
                               Refine
-                            </button>
-                            <GhostButton
+                            </SmolderButton>
+                            <SmolderButton
+                              variant="ghost"
                               onClick={() => regenerateSection(section.sectionId, false)}
                               disabled={generating}
-                              className="!text-emerald-300"
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider !text-emerald-300"
                             >
                               {sectionBusy === section.sectionId ? (
                                 <Spinner className="mr-1 inline h-3 w-3" />
                               ) : null}
                               Regenerate
-                            </GhostButton>
-                            <button
+                            </SmolderButton>
+                            <SmolderButton
+                              variant="forge"
                               onClick={() => approveSection(section.sectionId)}
                               disabled={generating || busy !== null}
-                              className="flex items-center gap-1.5 rounded-none border border-[#00ff9c]/60 bg-[#00ff9c]/15 px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/25 disabled:opacity-40"
+                              className="flex items-center gap-1.5 rounded-none px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                             >
                               {sectionBusy === section.sectionId ? (
                                 <Spinner className="h-3 w-3" />
                               ) : null}
                               Approve
-                            </button>
+                            </SmolderButton>
                           </>
                         )}
                       </div>
@@ -1223,7 +1225,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
                     {/* Inline editor */}
                     {isEditingThis && (
-                      <div className="mb-3 rounded-none border border-[#00ff9c]/25 bg-[#00ff9c]/5 p-3">
+                      <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
                         <textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
@@ -1232,29 +1234,31 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                           placeholder="Edit section content…"
                         />
                         <div className="mt-2 flex justify-end gap-2">
-                          <button
+                          <SmolderButton
+                            variant="muted"
                             onClick={() => { setEditingSection(null); setEditText(""); }}
-                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 hover:bg-white/5"
+                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </SmolderButton>
+                          <SmolderButton
+                            variant="forge"
                             onClick={() => saveSection(section.sectionId)}
                             disabled={!editText.trim() || sectionBusy === section.sectionId}
-                            className="rounded-none bg-[#00ff9c] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-black transition hover:bg-[#5cffbe] disabled:opacity-40"
+                            className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                           >
                             {sectionBusy === section.sectionId ? (
                               <Spinner className="mr-1 inline h-3 w-3" />
                             ) : null}
                             Save edits
-                          </button>
+                          </SmolderButton>
                         </div>
                       </div>
                     )}
 
                     {/* Refine with feedback */}
                     {feedbackFor === section.sectionId && (
-                      <div className="mb-3 rounded-none border border-[#00ff9c]/25 bg-[#00ff9c]/5 p-3">
+                      <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
                         <textarea
                           value={feedbackText}
                           onChange={(e) => setFeedbackText(e.target.value)}
@@ -1264,26 +1268,28 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                           className="lf-input resize-none !text-sm"
                         />
                         <div className="mt-2 flex justify-end gap-2">
-                          <button
+                          <SmolderButton
+                            variant="muted"
                             onClick={() => setFeedbackFor(null)}
-                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 hover:bg-white/5"
+                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </SmolderButton>
+                          <SmolderButton
+                            variant="forge"
                             onClick={() => regenerateSection(section.sectionId, true)}
                             disabled={!feedbackText.trim() || generating}
-                            className="rounded-none bg-[#00ff9c] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-black transition hover:bg-[#5cffbe] disabled:opacity-40"
+                            className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                           >
                             Apply revision
-                          </button>
+                          </SmolderButton>
                         </div>
                       </div>
                     )}
 
                     {sectionBusy === section.sectionId && !isEditingThis ? (
                       <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
-                        <Spinner className="h-4 w-4 text-[#00ff9c]" />
+                        <Spinner className="h-4 w-4 text-[var(--lf-accent)]" />
                         Rewriting this section…
                       </div>
                     ) : !isEditingThis ? (
@@ -1291,12 +1297,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     ) : null}
 
                     {section.sourceRefs.length > 0 && !isEditingThis && (
-                      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#00ff9c]/10 pt-3">
+                      <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
                         {section.sourceRefs.map((ref) => (
                           <span
                             key={ref}
                             title={refName(ref)}
-                            className="border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                            className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                            style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
                           >
                             [{ref}] {refName(ref)}
                           </span>
@@ -1314,7 +1321,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
         {busy === "generate" && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="lf-panel lf-frame relative flex flex-col items-center gap-3 px-8 py-6">
-              <Spinner className="h-7 w-7 text-[#00ff9c]" />
+              <Spinner className="h-7 w-7 text-[var(--lf-accent)]" />
               <p className="font-mono text-sm uppercase tracking-widest text-emerald-100">
                 Generating your lesson plan…
               </p>
