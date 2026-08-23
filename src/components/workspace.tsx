@@ -283,6 +283,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const detailsRef = useRef(details);
+  detailsRef.current = details;
 
   const generating = busy === "generate" || sectionBusy !== null;
   const hasSources = nb.sources.length > 0;
@@ -429,10 +431,39 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
+  async function saveDetailsFromRef(): Promise<void> {
+    setError(null);
+    const d = detailsRef.current;
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/details`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            competency: d.competency ?? "",
+            learningArea: d.learningArea ?? "",
+            teachers: d.teachers ?? "",
+            position: d.position ?? "",
+            gradeSection: d.gradeSection ?? "",
+            sessions: d.sessions ?? "",
+            date: d.date ?? "",
+            learnerContext: d.learnerContext ?? "",
+          }),
+        }
+      );
+      setNb(data.notebook);
+      setDetailsSaved(true);
+      setTimeout(() => setDetailsSaved(false), 2000);
+    } catch (err) {
+      fail(err);
+    }
+  }
+
   function scheduleAutoSave() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      saveDetails();
+      saveDetailsFromRef();
     }, 800);
   }
 
