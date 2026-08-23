@@ -777,7 +777,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           </p>
         </section>
 
-        {!showDetailsForm && referencesBlock}
+        {/* References */}
+        {referencesBlock}
 
         {/* Lesson details - compact read-only summary once a plan exists */}
         {!showDetailsForm && (
@@ -799,7 +800,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 value={details.competency}
                 clamp
               />
-              <DetailSummary label="Learning Area/s" value={details.learningArea} />
+              <DetailSummary label="Subject" value={details.learningArea} />
               <DetailSummary label="Name of Teacher/s" value={details.teachers} />
               <DetailSummary label="Position / Designation" value={details.position} />
               <DetailSummary label="Grade Level and Section" value={details.gradeSection} />
@@ -933,7 +934,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 <div className="lf-panel space-y-2 p-3">
                   <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                     <DetailInput
-                      label="Learning Area/s"
+                      label="Subject"
                       value={details.learningArea ?? ""}
                       onChange={(v) => { setDetails((d) => ({ ...d, learningArea: v })); scheduleAutoSave(); }}
                       placeholder="e.g. Science"
