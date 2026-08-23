@@ -20,15 +20,19 @@ export default function ForgeBackground() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas!.getContext("2d");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let animId: number;
     const sparks: Spark[] = [];
+    let canvasW = canvas.width;
+    let canvasH = canvas.height;
 
     function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvasW = window.innerWidth;
+      canvasH = window.innerHeight;
+      canvas.width = canvasW;
+      canvas.height = canvasH;
     }
     resize();
     window.addEventListener("resize", resize);
@@ -57,8 +61,8 @@ export default function ForgeBackground() {
     function spawnSpark() {
       const accent = getAccentColor();
       const baseHue = hexToHue(accent);
-      const x = canvas.width * 0.5 + (Math.random() - 0.5) * canvas.width * 0.6;
-      const y = canvas.height + 10;
+      const x = canvasW * 0.5 + (Math.random() - 0.5) * canvasW * 0.6;
+      const y = canvasH + 10;
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
       const speed = 1.5 + Math.random() * 3;
       sparks.push({
@@ -75,9 +79,8 @@ export default function ForgeBackground() {
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvasW, canvasH);
 
-      // Spawn sparks periodically
       if (Math.random() < 0.15) spawnSpark();
       if (Math.random() < 0.05) {
         for (let i = 0; i < 3; i++) spawnSpark();
@@ -88,7 +91,7 @@ export default function ForgeBackground() {
         s.life++;
         s.x += s.vx;
         s.y += s.vy;
-        s.vy += 0.02; // slight gravity
+        s.vy += 0.02;
         s.vx *= 0.99;
 
         const progress = s.life / s.maxLife;
@@ -99,7 +102,6 @@ export default function ForgeBackground() {
           continue;
         }
 
-        // Core glow
         const glowSize = s.size * (1 + (1 - progress) * 3);
         const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowSize);
         gradient.addColorStop(0, `hsla(${s.hue}, 100%, 80%, ${alpha})`);
@@ -110,7 +112,6 @@ export default function ForgeBackground() {
         ctx.arc(s.x, s.y, glowSize, 0, Math.PI * 2);
         ctx.fill();
 
-        // Bright core
         ctx.fillStyle = `hsla(${s.hue}, 100%, 95%, ${alpha * 0.9})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size * 0.4, 0, Math.PI * 2);
