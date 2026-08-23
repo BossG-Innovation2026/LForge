@@ -1,11 +1,12 @@
 import type { TemplateSection } from "./types";
 
-export const OFFICIAL_TEMPLATE_FILE_NAME = "DepEd Lesson Plan Format (DO 3 s.2026)";
+export const OFFICIAL_TEMPLATE_FILE_NAME = "DepEd Lesson Plan Format (DO 016 s.2026 — ILAW Framework)";
 
 export const DEFAULT_AI_DECLARATION =
-  "This lesson plan was drafted with the assistance of LessonForge (Google Gemini AI) " +
-  "based on teacher-provided sources and instructions. All generated content was " +
-  "reviewed, refined where necessary, and approved by the teacher before finalization.";
+  "This lesson plan was drafted with the assistance of LessonForge (AI-powered) " +
+  "based on teacher-provided sources and instructions, aligned with the ILAW Framework " +
+  "under DepEd Order No. 016, s. 2026. All generated content was reviewed, refined where " +
+  "necessary, and approved by the teacher before finalization.";
 
 export interface OfficialSection {
   id: string;

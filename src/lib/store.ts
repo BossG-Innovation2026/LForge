@@ -61,7 +61,7 @@ export async function createNotebook(title: string): Promise<Notebook> {
     updatedAt: now,
     sources: [],
     template: {
-      fileName: "DepEd Lesson Plan Format (DO 3 s.2026)",
+      fileName: "DepEd Lesson Plan Format (DO 016 s.2026 — ILAW Framework)",
       sections: officialTemplateSections(),
     },
     details: {},

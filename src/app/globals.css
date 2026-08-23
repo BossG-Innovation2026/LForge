@@ -33,8 +33,8 @@ body::before {
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(0, 255, 156, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 156, 0.05) 1px, transparent 1px);
+    linear-gradient(var(--lf-grid, rgba(0, 255, 156, 0.05)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lf-grid, rgba(0, 255, 156, 0.05)) 1px, transparent 1px);
   background-size: 34px 34px;
   mask-image: radial-gradient(ellipse 120% 90% at 18% 0%, black 25%, transparent 72%);
   pointer-events: none;
@@ -46,8 +46,8 @@ body::after {
   inset: 0;
   z-index: -3;
   background:
-    radial-gradient(700px 420px at 12% -6%, rgba(0, 255, 156, 0.11), transparent 70%),
-    radial-gradient(560px 380px at 96% 108%, rgba(0, 255, 156, 0.06), transparent 70%);
+    radial-gradient(700px 420px at 12% -6%, var(--lf-glow-a, rgba(0, 255, 156, 0.11)), transparent 70%),
+    radial-gradient(560px 380px at 96% 108%, var(--lf-glow-b, rgba(0, 255, 156, 0.06)), transparent 70%);
   pointer-events: none;
 }
 

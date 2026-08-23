@@ -1,83 +1,65 @@
-import Link from "next/link";
-import { listNotebooks } from "@/lib/store";
 import CreateNotebookButton from "@/components/create-notebook-button";
-import DeleteNotebookButton from "@/components/delete-notebook-button";
 
 export const dynamic = "force-dynamic";
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-export default async function HomePage() {
-  const notebooks = await listNotebooks();
-
+export default function HomePage() {
   return (
-    <div className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-      <header className="mb-10">
-        <div className="mb-2 flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-none border border-[#00ff9c]/60 bg-[#00ff9c]/10 font-mono text-sm font-bold text-[#00ff9c] shadow-[0_0_18px_rgba(0,255,156,0.25)]">
+    <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-16 flex flex-col items-center justify-center">
+      <header className="mb-10 text-center">
+        <div className="mb-4 flex items-center justify-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-none border border-[var(--lf-accent)]/60 bg-[var(--lf-accent)]/10 font-mono text-sm font-bold text-[var(--lf-accent)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
             LF
           </span>
-          <h1 className="font-mono text-2xl font-bold uppercase tracking-[0.18em] text-emerald-50">
+          <h1 className="font-mono text-2xl font-bold uppercase tracking-[0.18em]" style={{ color: "var(--lf-fg)" }}>
             LessonForge
           </h1>
         </div>
         <p className="font-mono text-xs tracking-wide text-zinc-500">
-          Upload sources — get a grounded, classroom-ready DepEd lesson plan.
+          Upload sources — get a grounded, classroom-ready ILAW lesson plan.
         </p>
       </header>
 
-      <section className="lf-panel lf-frame relative mb-12 p-8">
-        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00ff9c]/60">
+      <section className="lf-panel lf-frame relative w-full p-8">
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--lf-accent)]/60">
           &gt; Welcome
         </h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
-          Forge grounded, classroom-ready DepEd lesson plans from your own
-          references.
-          Set your learning competency, add references — files or web links — and
-          LessonForge drafts every section of the official DO 3 s.2026 format for
-          you to review, refine, and approve before export.
+        <p className="max-w-xl text-sm leading-relaxed text-zinc-300">
+          LessonForge helps Filipino teachers create lesson plans aligned with the{" "}
+          <span className="font-semibold" style={{ color: "var(--lf-accent)" }}>
+            ILAW Framework
+          </span>{" "}
+          under DepEd Order No. 016, s. 2026 — the official replacement for the DLL and DLP.
+          Add your reference materials, set your learning competency, and LessonForge
+          drafts every ILAW section for you to review, refine, and approve before export.
         </p>
-        <div className="mt-5">
+        <div className="mt-4 rounded-none border border-[var(--lf-accent)]/15 bg-[var(--lf-accent)]/5 px-4 py-3">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--lf-accent)]/70 mb-1.5">
+            About ILAW
+          </p>
+          <p className="text-xs leading-relaxed text-zinc-400">
+            ILAW (Inihanda, Laging Handa, Abot-Kaya, Wasto) replaces the traditional DLL and DLP
+            with a streamlined, flexible planning system designed to reduce teacher paperwork
+            while keeping lesson quality high. DO 016 s.2026 makes ILAW the standard for
+            all public school teachers nationwide.
+          </p>
+        </div>
+        <ul className="mt-4 space-y-1.5 font-mono text-[11px] text-zinc-500">
+          <li className="flex items-center gap-2">
+            <span className="text-[var(--lf-accent)]/60">→</span> Follows the official ILAW lesson plan sections
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-[var(--lf-accent)]/60">→</span> Each session is private and disappears after you download your plan
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-[var(--lf-accent)]/60">→</span> No account required
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-[var(--lf-accent)]/60">→</span> Multiple free AI providers supported
+          </li>
+        </ul>
+        <div className="mt-6">
           <CreateNotebookButton />
         </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00ff9c]/60">
-          &gt; Your lesson plans
-        </h2>
-        {notebooks.length === 0 ? (
-          <p className="rounded-none border border-dashed border-[#00ff9c]/20 px-6 py-10 text-center font-mono text-xs tracking-wide text-zinc-500">
-            No lesson plans yet. Create your first one above.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {notebooks.map((nb) => (
-              <li key={nb.id}>
-                <div className="group flex items-center gap-3 rounded-none border border-[#00ff9c]/15 bg-[#0a0f0c]/80 p-4 transition hover:border-[#00ff9c]/50 hover:shadow-[0_0_22px_rgba(0,255,156,0.08)]">
-                  <Link href={`/notebook/${nb.id}`} className="min-w-0 flex-1 outline-none">
-                    <p className="truncate font-mono text-sm font-medium text-emerald-50 transition group-hover:text-[#00ff9c]">
-                      {nb.title}
-                    </p>
-                    <p className="mt-1 font-mono text-xs tracking-wide text-zinc-500">
-                      Updated {formatDate(nb.updatedAt)} ·{" "}
-                      {nb.sourceCount === 1 ? "1 reference" : `${nb.sourceCount} references`}
-                      {nb.hasTemplate ? " · official format" : ""}
-                      {nb.hasResult ? " · plan generated" : ""}
-                    </p>
-                  </Link>
-                  <DeleteNotebookButton id={nb.id} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
 import { extractText, SOURCE_ACCEPT } from "@/lib/client-extract";
+import { AI_MODELS, DEFAULT_MODEL_ID, getProviderLabel, type AIModel } from "@/lib/ai-providers";
 
 const COMPETENCY_SECTION_ID = "sec-1";
 
@@ -117,6 +118,7 @@ function DetailInput({
   placeholder,
   maxLength,
   multiline = false,
+  type = "text",
 }: {
   label: string;
   value: string;
@@ -124,6 +126,7 @@ function DetailInput({
   placeholder?: string;
   maxLength?: number;
   multiline?: boolean;
+  type?: string;
 }) {
   return (
     <label className="block">
@@ -139,7 +142,7 @@ function DetailInput({
         />
       ) : (
         <input
-          type="text"
+          type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           maxLength={maxLength}
@@ -178,11 +181,104 @@ function DetailSummary({
   );
 }
 
+const PROVIDER_GROUPS = Array.from(
+  AI_MODELS.reduce((map, m) => {
+    const list = map.get(m.provider) ?? [];
+    list.push(m);
+    map.set(m.provider, list);
+    return map;
+  }, new Map<string, AIModel[]>())
+);
+
+function ModelSelector({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = AI_MODELS.find((m) => m.id === value) ?? AI_MODELS[0];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
+        className="flex w-full items-center justify-between gap-2 rounded-none border border-[#00ff9c]/20 bg-[#00ff9c]/3 px-2.5 py-1.5 text-left transition hover:border-[#00ff9c]/50 disabled:opacity-50"
+      >
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs font-medium text-emerald-100">
+            {current.name}
+          </p>
+          <p className="font-mono text-[10px] text-zinc-500">
+            {getProviderLabel(current.provider)}
+            {current.free && (
+              <span className="ml-1.5 border border-[#00ff9c]/30 bg-[#00ff9c]/8 px-1 py-px text-[#00ff9c]/70">
+                free
+              </span>
+            )}
+          </p>
+        </div>
+        <svg
+          className={`h-3 w-3 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
+          <path d="M6 8L1 3h10L6 8z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border border-[#00ff9c]/25 bg-[#050807] shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          {PROVIDER_GROUPS.map(([provider, models]) => (
+            <div key={provider}>
+              <div className="border-b border-[#00ff9c]/10 bg-[#00ff9c]/5 px-2.5 py-1">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#00ff9c]/60">
+                  {getProviderLabel(provider as AIModel["provider"])}
+                </span>
+              </div>
+              {models.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(m.id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-start justify-between gap-2 px-2.5 py-2 text-left transition hover:bg-[#00ff9c]/8 ${
+                    m.id === value ? "bg-[#00ff9c]/10" : ""
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-xs text-emerald-100">{m.name}</p>
+                    {m.note && (
+                      <p className="font-mono text-[10px] text-zinc-500">{m.note}</p>
+                    )}
+                  </div>
+                  {m.free && (
+                    <span className="mt-0.5 shrink-0 border border-[#00ff9c]/30 bg-[#00ff9c]/8 px-1 py-px font-mono text-[10px] text-[#00ff9c]/70">
+                      free
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Workspace({ initialNotebook }: { initialNotebook: Notebook }) {
   const [nb, setNb] = useState<Notebook>(initialNotebook);
   const [title, setTitle] = useState(initialNotebook.title);
 
-  const [busy, setBusy] = useState<null | "sources" | "generate" | "export">(null);
+  const [busy, setBusy] = useState<null | "sources" | "generate" | "export" | "link">(null);
   const [sectionBusy, setSectionBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -190,6 +286,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [instructions, setInstructions] = useState("");
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID);
+
+  const [linkUrl, setLinkUrl] = useState("");
+  const [showLinkInput, setShowLinkInput] = useState(false);
 
   const [details, setDetails] = useState<NotebookDetails>(
     initialNotebook.details ?? {}
@@ -273,6 +376,30 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
+  async function addLink() {
+    const url = linkUrl.trim();
+    if (!url) return;
+    setBusy("link");
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/links`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        }
+      );
+      setNb(data.notebook);
+      setLinkUrl("");
+      setShowLinkInput(false);
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function removeSource(sourceId: string) {
     setError(null);
     try {
@@ -292,8 +419,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       competency: details.competency ?? "",
       learningArea: details.learningArea ?? "",
       teachers: details.teachers ?? "",
+      position: details.position ?? "",
       gradeSection: details.gradeSection ?? "",
       sessions: details.sessions ?? "",
+      date: details.date ?? "",
     });
   }
 
@@ -317,7 +446,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
-  /** Discard unsaved edits and return to the generated plan view. */
   function backToPlan(): void {
     setDetails(nb.details ?? {});
     setDetailsEditing(false);
@@ -336,7 +464,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     setError(null);
     setFeedbackFor(null);
     try {
-      // Persist current lesson details so generation runs against them.
       const saved = await apiCall<{ notebook: Notebook }>(
         `/api/notebooks/${nb.id}/details`,
         {
@@ -350,7 +477,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       const data = await apiCall<{ notebook: Notebook }>("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notebookId: nb.id, instructions }),
+        body: JSON.stringify({ notebookId: nb.id, instructions, modelId: selectedModel }),
       });
       setNb(data.notebook);
       setDetails(data.notebook.details ?? {});
@@ -374,6 +501,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           sectionId,
           instructions,
           feedback: useFeedback ? feedbackText : undefined,
+          modelId: selectedModel,
         }),
       });
       setNb(data.notebook);
@@ -401,6 +529,42 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       setNb(data.notebook);
       setFeedbackFor(null);
       setFeedbackText("");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setSectionBusy(null);
+    }
+  }
+
+  async function approveAll() {
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/approve-all`,
+        { method: "POST" }
+      );
+      setNb(data.notebook);
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function saveSection(sectionId: string) {
+    if (!editText.trim()) return;
+    setSectionBusy(sectionId);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/sections/${sectionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editText }),
+        }
+      );
+      setNb(data.notebook);
+      setEditingSection(null);
+      setEditText("");
     } catch (err) {
       fail(err);
     } finally {
@@ -436,6 +600,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+
+      // Auto-delete the notebook after successful download
+      try {
+        await fetch(`/api/notebooks/${nb.id}`, { method: "DELETE" });
+      } catch { /* best-effort */ }
+
+      // Redirect back to home after a short delay so the user sees the download start
+      setTimeout(() => { window.location.href = "/"; }, 1200);
     } catch (err) {
       fail(err);
     } finally {
@@ -487,67 +659,115 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
         : null;
   const canGenerate = !genBlockReason && !generating && busy !== "sources";
 
+  const unapprovedWithContent = nb.result?.sections.filter(
+    (s) => !s.approvedAt && s.content && s.sectionId !== COMPETENCY_SECTION_ID
+  ) ?? [];
+
+  /* References panel */
+  const referencesBlock = (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <SectionHeading>References ({nb.sources.length})</SectionHeading>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowLinkInput((v) => !v)}
+            disabled={busy !== null}
+            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/10 disabled:opacity-50"
+          >
+            + Link
+          </button>
+          <button
+            onClick={() => sourceInputRef.current?.click()}
+            disabled={busy !== null}
+            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/10 disabled:opacity-50"
+          >
+            {busy === "sources" ? (
+              <span className="flex items-center gap-1.5">
+                <Spinner className="h-3 w-3" /> Uploading
+              </span>
+            ) : (
+              "+ Files"
+            )}
+          </button>
+        </div>
+      </div>
+
+      {showLinkInput && (
+        <div className="mb-2 flex gap-1.5">
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addLink()}
+            placeholder="https://..."
+            className="lf-input min-w-0 flex-1"
+            disabled={busy === "link"}
+          />
+          <button
+            onClick={addLink}
+            disabled={!linkUrl.trim() || busy === "link"}
+            className="shrink-0 rounded-none border border-[#00ff9c]/40 bg-[#00ff9c]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/20 disabled:opacity-40"
+          >
+            {busy === "link" ? <Spinner className="h-3 w-3" /> : "Add"}
+          </button>
+          <button
+            onClick={() => { setShowLinkInput(false); setLinkUrl(""); }}
+            className="shrink-0 rounded-none px-1.5 py-1 font-mono text-[11px] text-zinc-500 hover:text-zinc-300"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={sourceInputRef}
+        type="file"
+        multiple
+        accept={SOURCE_ACCEPT}
+        className="hidden"
+        onChange={(e) => handleSourceUpload(e.target.files)}
+      />
+      {hasSources ? (
+        <ul className="space-y-1.5">
+          {nb.sources.map((s) => (
+            <li
+              key={s.id}
+              className="group flex items-center gap-2 rounded-none border border-[#00ff9c]/15 bg-[#0a0f0c]/80 px-3 py-2"
+            >
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#00ff9c]">
+                    {s.name}
+                  </a>
+                ) : s.name}
+              </span>
+              <span className="shrink-0 border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-[#00ff9c]/70">
+                {s.kind}
+              </span>
+              <button
+                onClick={() => removeSource(s.id)}
+                disabled={busy !== null}
+                aria-label={`Remove ${s.name}`}
+                className="shrink-0 text-xs text-zinc-600 transition hover:text-red-400 disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-none border border-dashed border-[#00ff9c]/20 bg-transparent px-3 py-4 text-center text-xs text-zinc-500">
+          Add reference files or web links to ground the lesson plan.
+        </p>
+      )}
+    </section>
+  );
+
   return (
     <div className="flex min-h-0 w-full flex-1">
       {/* Sidebar */}
       <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-r border-[#00ff9c]/15 bg-black/40 p-4">
-        {/* References */}
-        <section>
-          <div className="mb-2 flex items-center justify-between">
-            <SectionHeading>References ({nb.sources.length})</SectionHeading>
-            <button
-              onClick={() => sourceInputRef.current?.click()}
-              disabled={busy !== null}
-              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/10 disabled:opacity-50"
-            >
-              {busy === "sources" ? (
-                <span className="flex items-center gap-1.5">
-                  <Spinner className="h-3 w-3" /> Uploading
-                </span>
-              ) : (
-                "+ Add files"
-              )}
-            </button>
-          </div>
-          <input
-            ref={sourceInputRef}
-            type="file"
-            multiple
-            accept={SOURCE_ACCEPT}
-            className="hidden"
-            onChange={(e) => handleSourceUpload(e.target.files)}
-          />
-          {hasSources ? (
-            <ul className="space-y-1.5">
-              {nb.sources.map((s) => (
-                <li
-                  key={s.id}
-                  className="group flex items-center gap-2 rounded-none border border-[#00ff9c]/15 bg-[#0a0f0c]/80 px-3 py-2"
-                >
-                  <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
-                    {s.name}
-                  </span>
-                  <span className="shrink-0 border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-[#00ff9c]/70">
-                    {s.kind}
-                  </span>
-                  <button
-                    onClick={() => removeSource(s.id)}
-                    disabled={busy !== null}
-                    aria-label={`Remove ${s.name}`}
-                    className="shrink-0 text-xs text-zinc-600 transition hover:text-red-400 disabled:opacity-50"
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="rounded-none border border-dashed border-[#00ff9c]/20 bg-transparent px-3 py-4 text-center text-xs text-zinc-500">
-              Add reference files to ground the lesson plan: PDF, DOCX, PPTX,
-              TXT, HTML, or images.
-            </p>
-          )}
-        </section>
+        {!showDetailsForm && referencesBlock}
 
         {/* Format */}
         <section>
@@ -556,10 +776,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           </div>
           <div className="lf-panel p-3">
             <p className="font-mono text-xs uppercase tracking-wider text-emerald-100">
-              Official DepEd Lesson Plan
+              ILAW Framework
             </p>
             <p className="mt-0.5 font-mono text-[11px] tracking-wide text-zinc-500">
-              DO 3 s.2026 · fixed form
+              DO 016 s.2026 · replaces DLL &amp; DLP
             </p>
             <ol className="mt-2 space-y-1 border-l border-[#00ff9c]/25 pl-3">
               {nb.template?.sections.map((section) => (
@@ -576,6 +796,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               ))}
             </ol>
           </div>
+        </section>
+
+        {/* AI Model */}
+        <section>
+          <div className="mb-2">
+            <SectionHeading>AI Model</SectionHeading>
+          </div>
+          <ModelSelector
+            value={selectedModel}
+            onChange={setSelectedModel}
+            disabled={generating}
+          />
+          <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-zinc-600">
+            All listed models are free. Set the matching API key in .env.local to use providers other than Gemini.
+          </p>
         </section>
 
         {/* Lesson details - compact read-only summary once a plan exists */}
@@ -598,11 +833,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               />
               <DetailSummary label="Learning Area/s" value={details.learningArea} />
               <DetailSummary label="Name of Teacher/s" value={details.teachers} />
-              <DetailSummary
-                label="Grade Level and Section"
-                value={details.gradeSection}
-              />
+              <DetailSummary label="Position / Designation" value={details.position} />
+              <DetailSummary label="Grade Level and Section" value={details.gradeSection} />
               <DetailSummary label="No. of Sessions" value={details.sessions} />
+              <DetailSummary label="Date" value={details.date} />
               <button
                 onClick={generateAll}
                 disabled={!canGenerate}
@@ -683,131 +917,148 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </div>
           </div>
 
-          {/* Lesson details - editable in the main window during setup */}
+          {/* Setup row - lesson details and references side by side */}
           {showDetailsForm && (
-            <section className="mb-6">
-              <div className="mb-2 flex items-center justify-between">
-                <SectionHeading>Lesson details</SectionHeading>
-                <div className="flex items-center gap-3">
-                  {detailsSaved && (
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-[#00ff9c]">
-                      Saved ✓
-                    </span>
-                  )}
-                  {nb.result && (
-                    <button
-                      onClick={backToPlan}
-                      disabled={busy !== null}
-                      className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-white/5 hover:text-zinc-200 disabled:opacity-50"
-                    >
-                      ← Back to plan
-                    </button>
-                  )}
+            <div className="mb-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-5">
+              <section className="lg:col-span-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <SectionHeading>Lesson details</SectionHeading>
+                  <div className="flex items-center gap-3">
+                    {detailsSaved && (
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-[#00ff9c]">
+                        Saved ✓
+                      </span>
+                    )}
+                    {nb.result && (
+                      <button
+                        onClick={backToPlan}
+                        disabled={busy !== null}
+                        className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-white/5 hover:text-zinc-200 disabled:opacity-50"
+                      >
+                        ← Back to plan
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Competency - required standard */}
-              <div className="lf-panel lf-frame relative mb-2 p-3">
-                <label className="block">
-                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
-                    Learning Competency &amp; Curriculum Standards{" "}
-                    <span aria-hidden="true">*</span>
-                  </span>
-                  {!competencySet && (
-                    <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-amber-400/90">
-                      Required - anchors every generated section
+                {/* Competency - required */}
+                <div className="lf-panel lf-frame relative mb-2 p-3">
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                      Learning Competency &amp; Curriculum Standards{" "}
+                      <span aria-hidden="true">*</span>
                     </span>
-                  )}
-                  <textarea
-                    value={details.competency ?? ""}
-                    onChange={(e) =>
-                      setDetails((d) => ({ ...d, competency: e.target.value }))
-                    }
-                    rows={4}
-                    maxLength={2000}
-                    placeholder={"e.g. Describe the process of photosynthesis and explain its importance to living things."}
-                    className="lf-input resize-none"
-                  />
-                </label>
-              </div>
+                    {!competencySet && (
+                      <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-amber-400/90">
+                        Required - anchors every generated section
+                      </span>
+                    )}
+                    <textarea
+                      value={details.competency ?? ""}
+                      onChange={(e) =>
+                        setDetails((d) => ({ ...d, competency: e.target.value }))
+                      }
+                      rows={4}
+                      maxLength={2000}
+                      placeholder="e.g. Describe the process of photosynthesis and explain its importance to living things."
+                      className="lf-input resize-none"
+                    />
+                  </label>
+                </div>
 
-              <div className="lf-panel space-y-2 p-3">
-                <DetailInput
-                  label="Learning Area/s"
-                  value={details.learningArea ?? ""}
-                  onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
-                  placeholder="e.g. Science"
-                  maxLength={500}
-                />
-                <DetailInput
-                  label="Name of Teacher/s"
-                  value={details.teachers ?? ""}
-                  onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
-                  placeholder="Teacher name(s)"
-                  maxLength={500}
-                />
-                <DetailInput
-                  label="Grade Level and Section"
-                  value={details.gradeSection ?? ""}
-                  onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
-                  placeholder="e.g. Grade 7 - Sampaguita"
-                  maxLength={500}
-                />
-                <DetailInput
-                  label="No. of Sessions"
-                  value={details.sessions ?? ""}
-                  onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
-                  placeholder="e.g. 4"
-                  maxLength={200}
-                />
-                <button
-                  onClick={saveDetails}
-                  disabled={busy !== null}
-                  className="w-full rounded-none bg-[#00ff9c] px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-black shadow-[0_0_16px_rgba(0,255,156,0.2)] transition hover:bg-[#5cffbe] disabled:opacity-50"
-                >
-                  Save lesson details
-                </button>
-              </div>
-            </section>
+                <div className="lf-panel space-y-2 p-3">
+                  <DetailInput
+                    label="Learning Area/s"
+                    value={details.learningArea ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, learningArea: v }))}
+                    placeholder="e.g. Science"
+                    maxLength={500}
+                  />
+                  <DetailInput
+                    label="Name of Teacher/s"
+                    value={details.teachers ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, teachers: v }))}
+                    placeholder="Teacher name(s)"
+                    maxLength={500}
+                  />
+                  <DetailInput
+                    label="Position / Designation"
+                    value={details.position ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, position: v }))}
+                    placeholder="e.g. Teacher I"
+                    maxLength={200}
+                  />
+                  <DetailInput
+                    label="Grade Level and Section"
+                    value={details.gradeSection ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, gradeSection: v }))}
+                    placeholder="e.g. Grade 7 - Sampaguita"
+                    maxLength={500}
+                  />
+                  <DetailInput
+                    label="No. of Sessions"
+                    value={details.sessions ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, sessions: v }))}
+                    placeholder="e.g. 4"
+                    maxLength={200}
+                  />
+                  <DetailInput
+                    label="Date"
+                    value={details.date ?? ""}
+                    onChange={(v) => setDetails((d) => ({ ...d, date: v }))}
+                    placeholder="e.g. August 25, 2026"
+                    maxLength={100}
+                  />
+                  <button
+                    onClick={saveDetails}
+                    disabled={busy !== null}
+                    className="w-full rounded-none bg-[#00ff9c] px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-black shadow-[0_0_16px_rgba(0,255,156,0.2)] transition hover:bg-[#5cffbe] disabled:opacity-50"
+                  >
+                    Save lesson details
+                  </button>
+                </div>
+              </section>
+              <div className="lg:col-span-2">{referencesBlock}</div>
+            </div>
           )}
 
           {/* Generate bar */}
           {showDetailsForm && (
-          <div className="lf-panel lf-frame relative mb-6 p-4">
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              rows={2}
-              maxLength={4000}
-              placeholder="Extra guidance for generation (optional): duration of the period, class profile, tone, things to emphasize…"
-              className="lf-input resize-none px-3 py-2 !text-sm"
-            />
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <p className="min-w-0 text-xs text-zinc-500">
-                {genBlockReason ?? (!hasSources
-                  ? "No references yet - the plan will rely on pedagogy only."
-                  : undefined)}
-              </p>
-              <button
-                onClick={generateAll}
-                disabled={!canGenerate}
-                className="shrink-0 rounded-none bg-[#00ff9c] px-5 py-2 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] transition hover:bg-[#5cffbe] disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
-              >
-                {busy === "generate" ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner className="h-4 w-4" /> Generating…
-                  </span>
-                ) : nb.result ? (
-                  "Regenerate plan"
-                ) : (
-                  "Generate lesson plan"
-                )}
-              </button>
+            <div className="lf-panel lf-frame relative mb-6 p-4">
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={2}
+                maxLength={4000}
+                placeholder="Extra guidance for generation (optional): duration of the period, class profile, tone, things to emphasize…"
+                className="lf-input resize-none px-3 py-2 !text-sm"
+              />
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <p className="min-w-0 text-xs text-zinc-500">
+                  {genBlockReason ?? (!hasSources
+                    ? "No references yet - the plan will rely on pedagogy only."
+                    : undefined)}
+                </p>
+                <button
+                  onClick={generateAll}
+                  disabled={!canGenerate}
+                  className="shrink-0 rounded-none bg-[#00ff9c] px-5 py-2 font-mono text-sm font-semibold uppercase tracking-wider text-black shadow-[0_0_22px_rgba(0,255,156,0.3)] transition hover:bg-[#5cffbe] disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+                >
+                  {busy === "generate" ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner className="h-4 w-4" /> Generating…
+                    </span>
+                  ) : nb.result ? (
+                    "Regenerate plan"
+                  ) : (
+                    "Generate lesson plan"
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
           )}
 
-          {/* Errors surface right where actions happen */}
+          {/* Errors */}
           {error && (
             <div className="mb-6 rounded-none border border-red-500/40 bg-red-500/5 p-3">
               <p className="font-mono text-[11px] uppercase tracking-wider text-red-400">
@@ -833,9 +1084,20 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     ? `${nb.sources.length} reference${nb.sources.length === 1 ? "" : "s"}`
                     : "pedagogy only"}
                 </p>
-                <p className="shrink-0 font-mono text-xs uppercase tracking-wider text-zinc-400">
-                  {approvedCount}/{totalSections} ready
-                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  {unapprovedWithContent.length > 0 && (
+                    <button
+                      onClick={approveAll}
+                      disabled={generating || busy !== null}
+                      className="rounded-none border border-[#00ff9c]/40 bg-[#00ff9c]/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/20 disabled:opacity-40"
+                    >
+                      Approve all
+                    </button>
+                  )}
+                  <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">
+                    {approvedCount}/{totalSections} ready
+                  </p>
+                </div>
               </div>
               <div
                 role="progressbar"
@@ -853,9 +1115,12 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   style={{ width: `${totalSections ? (approvedCount / totalSections) * 100 : 0}%` }}
                 />
               </div>
+
               {nb.result.sections.map((section) => {
                 const isCompetency = section.sectionId === COMPETENCY_SECTION_ID;
                 const isApproved = Boolean(section.approvedAt);
+                const isEditingThis = editingSection === section.sectionId;
+
                 if (isCompetency) {
                   return (
                     <article
@@ -870,126 +1135,175 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       </div>
                       <ContentBody content={section.content} />
                       <p className="mt-3 border-t border-[#00ff9c]/15 pt-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
-                        Authored by you in Lesson details - the AI builds every other
-                        section on this standard.
+                        Authored by you in Lesson details - the AI builds every other section on this standard.
                       </p>
                     </article>
                   );
                 }
+
                 return (
-                <article
-                  key={section.sectionId}
-                  className={`rounded-none border bg-[#0a0f0c]/80 p-5 shadow-sm transition-colors ${
-                    isApproved
-                      ? "border-[#00ff9c]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
-                      : "border-[#00ff9c]/15"
-                  }`}
-                >
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <h2 className="font-semibold text-emerald-50">{section.title}</h2>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {isApproved ? (
-                        <>
-                          <span className="border border-[#00ff9c]/50 bg-[#00ff9c]/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
-                            Approved ✓
-                          </span>
-                          <GhostButton
-                            onClick={() => approveSection(section.sectionId)}
-                            disabled={generating}
-                          >
-                            Un-approve
-                          </GhostButton>
-                        </>
-                      ) : (
-                        <>
+                  <article
+                    key={section.sectionId}
+                    className={`rounded-none border bg-[#0a0f0c]/80 p-5 shadow-sm transition-colors ${
+                      isApproved
+                        ? "border-[#00ff9c]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
+                        : "border-[#00ff9c]/15"
+                    }`}
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <h2 className="font-semibold text-emerald-50">{section.title}</h2>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {isApproved ? (
+                          <>
+                            <span className="border border-[#00ff9c]/50 bg-[#00ff9c]/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[#00ff9c]">
+                              Approved ✓
+                            </span>
+                            <GhostButton
+                              onClick={() => approveSection(section.sectionId)}
+                              disabled={generating}
+                            >
+                              Un-approve
+                            </GhostButton>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (isEditingThis) {
+                                  setEditingSection(null);
+                                  setEditText("");
+                                } else {
+                                  setEditingSection(section.sectionId);
+                                  setEditText(section.content);
+                                  setFeedbackFor(null);
+                                }
+                              }}
+                              disabled={generating}
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:opacity-40"
+                            >
+                              {isEditingThis ? "Cancel edit" : "Edit"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setFeedbackFor(
+                                  feedbackFor === section.sectionId ? null : section.sectionId
+                                );
+                                setFeedbackText("");
+                                setEditingSection(null);
+                              }}
+                              disabled={generating}
+                              className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:opacity-40"
+                            >
+                              Refine
+                            </button>
+                            <GhostButton
+                              onClick={() => regenerateSection(section.sectionId, false)}
+                              disabled={generating}
+                              className="!text-emerald-300"
+                            >
+                              {sectionBusy === section.sectionId ? (
+                                <Spinner className="mr-1 inline h-3 w-3" />
+                              ) : null}
+                              Regenerate
+                            </GhostButton>
+                            <button
+                              onClick={() => approveSection(section.sectionId)}
+                              disabled={generating || busy !== null}
+                              className="flex items-center gap-1.5 rounded-none border border-[#00ff9c]/60 bg-[#00ff9c]/15 px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/25 disabled:opacity-40"
+                            >
+                              {sectionBusy === section.sectionId ? (
+                                <Spinner className="h-3 w-3" />
+                              ) : null}
+                              Approve
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Inline editor */}
+                    {isEditingThis && (
+                      <div className="mb-3 rounded-none border border-[#00ff9c]/25 bg-[#00ff9c]/5 p-3">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={8}
+                          className="lf-input resize-y !text-sm"
+                          placeholder="Edit section content…"
+                        />
+                        <div className="mt-2 flex justify-end gap-2">
                           <button
-                            onClick={() => {
-                              setFeedbackFor(
-                                feedbackFor === section.sectionId ? null : section.sectionId
-                              );
-                              setFeedbackText("");
-                            }}
-                            disabled={generating}
-                            className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 transition hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] disabled:opacity-40"
+                            onClick={() => { setEditingSection(null); setEditText(""); }}
+                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 hover:bg-white/5"
                           >
-                            Refine
+                            Cancel
                           </button>
-                          <GhostButton
-                            onClick={() => regenerateSection(section.sectionId, false)}
-                            disabled={generating}
-                            className="!text-emerald-300"
+                          <button
+                            onClick={() => saveSection(section.sectionId)}
+                            disabled={!editText.trim() || sectionBusy === section.sectionId}
+                            className="rounded-none bg-[#00ff9c] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-black transition hover:bg-[#5cffbe] disabled:opacity-40"
                           >
                             {sectionBusy === section.sectionId ? (
                               <Spinner className="mr-1 inline h-3 w-3" />
                             ) : null}
-                            Regenerate
-                          </GhostButton>
-                          <button
-                            onClick={() => approveSection(section.sectionId)}
-                            disabled={generating || busy !== null}
-                            className="flex items-center gap-1.5 rounded-none border border-[#00ff9c]/60 bg-[#00ff9c]/15 px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00ff9c] transition hover:bg-[#00ff9c]/25 disabled:opacity-40"
-                          >
-                            {sectionBusy === section.sectionId ? (
-                              <Spinner className="h-3 w-3" />
-                            ) : null}
-                            Approve
+                            Save edits
                           </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {feedbackFor === section.sectionId && (
-                    <div className="mb-3 rounded-none border border-[#00ff9c]/25 bg-[#00ff9c]/5 p-3">
-                      <textarea
-                        value={feedbackText}
-                        onChange={(e) => setFeedbackText(e.target.value)}
-                        rows={2}
-                        maxLength={2000}
-                        placeholder="What should change in this section?"
-                        className="lf-input resize-none !text-sm"
-                      />
-                      <div className="mt-2 flex justify-end gap-2">
-                        <button
-                          onClick={() => setFeedbackFor(null)}
-                          className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 hover:bg-white/5"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => regenerateSection(section.sectionId, true)}
-                          disabled={!feedbackText.trim() || generating}
-                          className="rounded-none bg-[#00ff9c] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-black transition hover:bg-[#5cffbe] disabled:opacity-40"
-                        >
-                          Apply revision
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {sectionBusy === section.sectionId ? (
-                    <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
-                      <Spinner className="h-4 w-4 text-[#00ff9c]" />
-                      Rewriting this section…
-                    </div>
-                  ) : (
-                    <ContentBody content={section.content} />
-                  )}
+                    {/* Refine with feedback */}
+                    {feedbackFor === section.sectionId && (
+                      <div className="mb-3 rounded-none border border-[#00ff9c]/25 bg-[#00ff9c]/5 p-3">
+                        <textarea
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          rows={2}
+                          maxLength={2000}
+                          placeholder="What should change in this section?"
+                          className="lf-input resize-none !text-sm"
+                        />
+                        <div className="mt-2 flex justify-end gap-2">
+                          <button
+                            onClick={() => setFeedbackFor(null)}
+                            className="rounded-none px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400 hover:bg-white/5"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => regenerateSection(section.sectionId, true)}
+                            disabled={!feedbackText.trim() || generating}
+                            className="rounded-none bg-[#00ff9c] px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-black transition hover:bg-[#5cffbe] disabled:opacity-40"
+                          >
+                            Apply revision
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
-                  {section.sourceRefs.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#00ff9c]/10 pt-3">
-                      {section.sourceRefs.map((ref) => (
-                        <span
-                          key={ref}
-                          title={refName(ref)}
-                          className="border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
-                        >
-                          [{ref}] {refName(ref)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </article>
+                    {sectionBusy === section.sectionId && !isEditingThis ? (
+                      <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
+                        <Spinner className="h-4 w-4 text-[#00ff9c]" />
+                        Rewriting this section…
+                      </div>
+                    ) : !isEditingThis ? (
+                      <ContentBody content={section.content} />
+                    ) : null}
+
+                    {section.sourceRefs.length > 0 && !isEditingThis && (
+                      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#00ff9c]/10 pt-3">
+                        {section.sourceRefs.map((ref) => (
+                          <span
+                            key={ref}
+                            title={refName(ref)}
+                            className="border border-[#00ff9c]/20 bg-[#00ff9c]/5 px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                          >
+                            [{ref}] {refName(ref)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
                 );
               })}
             </div>

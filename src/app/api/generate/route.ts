@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateFullPlan, generateSingleSection } from "@/lib/gemini";
+import { generateFullPlan, generateSingleSection } from "@/lib/ai-providers";
 import { getNotebook, saveNotebook } from "@/lib/store";
 import { jsonError } from "@/lib/http";
 
@@ -14,6 +14,7 @@ interface GenerateBody {
   sectionId?: string;
   instructions?: string;
   feedback?: string;
+  modelId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
         feedback: body.feedback?.trim().slice(0, 2000),
         previousContent: previous?.content,
         standards,
+        modelId: body.modelId,
       });
 
       if (!notebook.result) {
@@ -122,6 +124,7 @@ export async function POST(request: NextRequest) {
       sections: generatable,
       instructions,
       standards,
+      modelId: body.modelId,
     });
 
     const now = new Date().toISOString();
