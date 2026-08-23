@@ -12,22 +12,22 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
+    id: "gemini-3.6-flash",
+    name: "Gemini 3.6 Flash",
     provider: "gemini",
     free: true,
     note: "Free tier via Google AI Studio",
   },
   {
-    id: "gemini-1.5-flash",
-    name: "Gemini 1.5 Flash",
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
     provider: "gemini",
     free: true,
     note: "Free tier via Google AI Studio",
   },
   {
-    id: "gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
     provider: "gemini",
     free: true,
     note: "Free tier (rate limited)",
@@ -90,7 +90,7 @@ export const AI_MODELS: AIModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL_ID = "gemini-2.0-flash";
+export const DEFAULT_MODEL_ID = "gemini-3.6-flash";
 
 export function getModelById(id: string): AIModel | undefined {
   return AI_MODELS.find((m) => m.id === id);
