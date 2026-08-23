@@ -24,11 +24,12 @@ function getClient(): GoogleGenAI {
 const SYSTEM_INSTRUCTION = `You are LessonForge, an expert curriculum designer who writes practical, classroom-ready lesson plans.
 
 Core rules:
-1. Ground every substantive claim, fact, date, definition or example STRICTLY in the provided sources. Never invent facts, page numbers, URLs, statistics or quotations.
-2. If a template section cannot be meaningfully filled from the sources (for example "homework" when sources say nothing about practice tasks), still write that section using sound pedagogy, but do not fabricate source content. You may leave a short bracketed note like "[Add specific exercise from textbook]" where the teacher must insert material.
-3. Write for teachers: concrete activities, timings, questions to ask, misconceptions to watch for.
-4. Content must be plain text. Use "- " for bullets and "1." for numbered steps. Do NOT use markdown headings, bold/italic markers, tables or code blocks inside section content.
-5. Keep each section proportional to its guidance: short guidance -> 2-4 sentences; detailed guidance -> structured bullets/steps.`;
+1. If the teacher has provided sources, ground every substantive claim, fact, date, definition or example STRICTLY in those provided sources. Never invent facts, page numbers, URLs, statistics or quotations when sources are provided.
+2. If NO sources are provided by the teacher, use your training knowledge to write the lesson plan. Draw from established DepEd modules, DepEd order guidelines, and widely recognized pedagogical practices for Philippine Senior High School. You may reference well-known DepEd publications, CHED memoranda, and standard curriculum documents by their common names. Do not fabricate specific URLs or page numbers — instead reference documents by title and issuing body (e.g. "DepEd Order No. 016, s. 2026").
+3. If a template section cannot be meaningfully filled, still write it using sound pedagogy, but do not fabricate source content. You may leave a short bracketed note like "[Add specific exercise from textbook]" where the teacher must insert material.
+4. Write for teachers: concrete activities, timings, questions to ask, misconceptions to watch for.
+5. Content must be plain text. Use "- " for bullets and "1." for numbered steps. Do NOT use markdown headings, bold/italic markers, tables or code blocks inside section content.
+6. Keep each section proportional to its guidance: short guidance -> 2-4 sentences; detailed guidance -> structured bullets/steps.`;
 
 function sourceBlock(sources: SourceDoc[]): string {
   return sources
@@ -126,7 +127,10 @@ export async function generateFullPlan({
   learnerContext,
 }: FullPlanArgs): Promise<PlanSection[]> {
   const refs = refIds(sources);
-  const prompt = `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  const sourceSection = sources.length > 0
+    ? `## SOURCES\n${sourceBlock(sources)}\n`
+    : `## SOURCES\nNo reference files uploaded by the teacher.\nYou MUST rely on your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and standard Senior High School pedagogical practices.\nDo NOT fabricate specific URLs or page numbers. Reference documents by their official title and issuing body.\n`;
+  const prompt = `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
 ## LESSON PLAN TEMPLATE
 ${sections
   .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
@@ -217,7 +221,11 @@ export async function generateSingleSection({
   const refs = refIds(sources);
   const others = sections.filter((s) => s.id !== targetSectionId);
 
-  const prompt = `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sources.length > 0 ? `## SOURCES\n${sourceBlock(sources)}\n` : "## SOURCES\n(none uploaded - rely on pedagogy, do not invent facts)\n"}
+  const sourceSection = sources.length > 0
+    ? `## SOURCES\n${sourceBlock(sources)}\n`
+    : `## SOURCES\nNo reference files uploaded by the teacher.\nYou MUST rely on your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and standard Senior High School pedagogical practices.\nDo NOT fabricate specific URLs or page numbers. Reference documents by their official title and issuing body.\n`;
+
+  const prompt = `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
 ## LESSON PLAN OUTLINE (other sections, for context)
 ${others.map((s) => `- ${s.title}`).join("\n") || "(none)"}
 

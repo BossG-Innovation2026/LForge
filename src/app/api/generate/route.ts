@@ -38,15 +38,7 @@ export async function POST(request: NextRequest) {
     const instructions = body.instructions?.trim().slice(0, 4000) || undefined;
     const standards = notebook.details?.competency?.trim() || undefined;
     const learnerContext = notebook.details?.learnerContext?.trim() || undefined;
-    if (notebook.sources.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Add at least one source - grounded generation needs reference material.",
-        },
-        { status: 400 }
-      );
-    }
+    const hasSources = notebook.sources.length > 0;
 
     if (body.sectionId) {
       // Regenerate a single section.

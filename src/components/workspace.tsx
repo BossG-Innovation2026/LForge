@@ -997,11 +997,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 placeholder="Write your specific instructions and add-on."
                 className="lf-input resize-none px-3 py-2 !text-sm"
               />
-              {!hasSources && (
-                <p className="mt-2 text-xs text-zinc-500">
-                  No references yet - the plan will rely on pedagogy only.
-                </p>
-              )}
             </div>
           )}
 
