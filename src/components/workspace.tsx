@@ -1007,7 +1007,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   variant="forge"
                   onClick={generateAll}
                   disabled={!canGenerate}
-                  className="w-full rounded-none px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+                  className="w-full rounded-none px-6 py-4 font-mono text-base font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
                 >
                   {busy === "generate" ? (
                     <span className="flex items-center justify-center gap-2">
