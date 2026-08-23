@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import { applyTheme, getTheme } from "@/lib/themes";
 
