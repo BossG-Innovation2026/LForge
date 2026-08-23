@@ -12,39 +12,18 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: "gemini-3.6-flash",
-    name: "Gemini 3.6 Flash",
-    provider: "gemini",
-    free: true,
-    note: "Free tier via Google AI Studio",
-  },
-  {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    provider: "gemini",
-    free: true,
-    note: "Free tier via Google AI Studio",
-  },
-  {
-    id: "gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    provider: "gemini",
-    free: true,
-    note: "Free tier (rate limited)",
-  },
-  {
     id: "llama-3.3-70b-versatile",
     name: "Llama 3.3 70B",
     provider: "groq",
     free: true,
-    note: "Free via Groq (fast)",
+    note: "Recommended · Free via Groq",
   },
   {
     id: "llama3-8b-8192",
     name: "Llama 3 8B",
     provider: "groq",
     free: true,
-    note: "Free via Groq (fastest)",
+    note: "Fastest · Free via Groq",
   },
   {
     id: "mixtral-8x7b-32768",
@@ -52,6 +31,27 @@ export const AI_MODELS: AIModel[] = [
     provider: "groq",
     free: true,
     note: "Free via Groq",
+  },
+  {
+    id: "gemini-3.6-flash",
+    name: "Gemini 3.6 Flash",
+    provider: "gemini",
+    free: true,
+    note: "Free tier · 20 req/day limit",
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    provider: "gemini",
+    free: true,
+    note: "Free tier · 20 req/day limit",
+  },
+  {
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
+    provider: "gemini",
+    free: true,
+    note: "Free tier (rate limited)",
   },
   {
     id: "meta-llama/llama-3.3-70b-instruct:free",
@@ -90,7 +90,7 @@ export const AI_MODELS: AIModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL_ID = "gemini-3.6-flash";
+export const DEFAULT_MODEL_ID = "llama-3.3-70b-versatile";
 
 export function getModelById(id: string): AIModel | undefined {
   return AI_MODELS.find((m) => m.id === id);
