@@ -27,16 +27,16 @@ export default function CreateNotebookButton() {
     const cx = e.clientX - rect.left;
     const cy = e.clientY - rect.top;
     const newSparks: ClickSpark[] = [];
-    const count = 18;
+    const count = 22;
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
-      const dist = 40 + Math.random() * 50;
+      const dist = 50 + Math.random() * 60;
       newSparks.push({
         id: sparkIdRef.current++,
         x: cx,
         y: cy,
         tx: Math.cos(angle) * dist,
-        ty: Math.sin(angle) * dist - 15,
+        ty: Math.sin(angle) * dist - 20,
         hue: 15 + Math.random() * 35,
         size: 2 + Math.random() * 3,
       });
@@ -73,23 +73,37 @@ export default function CreateNotebookButton() {
   }
 
   return (
-    <div className="flex flex-col items-start gap-2">
-      <div className="relative">
-        <div className="pointer-events-none absolute -inset-1 animate-pulse" style={{
-          background: "radial-gradient(ellipse at center, rgba(255,120,20,0.25) 0%, rgba(255,60,0,0.08) 60%, transparent 80%)",
+    <div className="flex w-full flex-col items-start gap-2">
+      <div className="relative w-full">
+        {/* Outer smoldering glow */}
+        <div className="pointer-events-none absolute -inset-2 animate-pulse" style={{
+          background: "radial-gradient(ellipse at center, rgba(255,120,20,0.3) 0%, rgba(255,60,0,0.1) 50%, transparent 80%)",
           animationDuration: "2s",
         }} />
-        <div className="pointer-events-none absolute -inset-3 animate-pulse" style={{
-          background: "radial-gradient(ellipse at center, rgba(255,80,0,0.1) 0%, transparent 70%)",
+        <div className="pointer-events-none absolute -inset-4 animate-pulse" style={{
+          background: "radial-gradient(ellipse at center, rgba(255,80,0,0.12) 0%, transparent 70%)",
           animationDuration: "3s",
           animationDelay: "0.5s",
         }} />
+
+        {/* Rising smoke */}
+        <div className="pointer-events-none absolute -top-16 left-0 right-0 h-16 overflow-hidden">
+          <span className="smoke-p" style={{ left: "15%", animationDelay: "0s" }} />
+          <span className="smoke-p" style={{ left: "35%", animationDelay: "1.2s" }} />
+          <span className="smoke-p" style={{ left: "55%", animationDelay: "0.6s" }} />
+          <span className="smoke-p" style={{ left: "75%", animationDelay: "1.8s" }} />
+          <span className="smoke-p" style={{ left: "25%", animationDelay: "2.4s" }} />
+          <span className="smoke-p" style={{ left: "65%", animationDelay: "3s" }} />
+          <span className="smoke-p" style={{ left: "45%", animationDelay: "3.6s" }} />
+          <span className="smoke-p" style={{ left: "85%", animationDelay: "0.9s" }} />
+          <span className="smoke-p" style={{ left: "10%", animationDelay: "2s" }} />
+        </div>
 
         <button
           ref={btnRef}
           onClick={handleClick}
           disabled={creating}
-          className="strike-btn relative w-full overflow-hidden rounded-none px-8 py-4 font-mono text-sm font-semibold uppercase tracking-wider text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+          className="strike-btn relative w-full overflow-hidden rounded-none px-8 py-5 font-mono text-sm font-semibold uppercase tracking-wider text-white transition disabled:cursor-not-allowed disabled:opacity-50"
           style={{
             background: "linear-gradient(180deg, #ff6a00 0%, #cc3300 50%, #991a00 100%)",
             boxShadow: "0 0 30px rgba(255,80,0,0.4), 0 0 60px rgba(255,40,0,0.2), inset 0 1px 0 rgba(255,200,100,0.3)",
@@ -110,13 +124,11 @@ export default function CreateNotebookButton() {
               Forging…
             </span>
           ) : (
-            <span className="relative z-10">
-              <span style={{ fontSize: "1.15em", letterSpacing: "0.12em" }}>STRIKE !!!</span>{" "}
-              while it hot
-            </span>
+            <span className="relative z-10">Strike while it&apos;s hot.</span>
           )}
         </button>
 
+        {/* Click sparks */}
         {sparks.map((s) => (
           <span
             key={s.id}
@@ -160,6 +172,33 @@ export default function CreateNotebookButton() {
           100% {
             opacity: 0;
             transform: translate(var(--tx), var(--ty)) scale(0.1);
+          }
+        }
+        .smoke-p {
+          position: absolute;
+          bottom: 0;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(180, 180, 180, 0.25);
+          filter: blur(3px);
+          animation: smoke-rise 4s ease-out infinite;
+          opacity: 0;
+        }
+        @keyframes smoke-rise {
+          0% {
+            opacity: 0;
+            transform: translateY(0) translateX(0) scale(1);
+          }
+          10% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 0.3;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-60px) translateX(${15}px) scale(3);
           }
         }
       `}</style>
