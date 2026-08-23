@@ -712,7 +712,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       </div>
 
       {showLinkInput && (
-        <div className="mb-2 flex gap-1.5">
+        <div className="mb-3 flex gap-1.5">
           <input
             type="url"
             value={linkUrl}
@@ -748,36 +748,76 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
         className="hidden"
         onChange={(e) => handleSourceUpload(e.target.files)}
       />
+
       {hasSources ? (
-        <ul className="space-y-1.5">
-          {nb.sources.map((s) => (
-            <li
-              key={s.id}
-              className="group flex items-center gap-2 rounded-none border px-3 py-2"
-              style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
-            >
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
-                {s.url ? (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--lf-accent)]">
-                    {s.name}
-                  </a>
-                ) : s.name}
-              </span>
-              <span className="shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
-                {s.kind}
-              </span>
-              <SmolderButton
-                variant="danger"
-                onClick={() => removeSource(s.id)}
-                disabled={busy !== null}
-                aria-label={`Remove ${s.name}`}
-                className="shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[11px]"
-              >
-                ✕
-              </SmolderButton>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-3">
+          {/* Attached Files */}
+          {nb.sources.filter((s) => s.kind !== "web").length > 0 && (
+            <div>
+              <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Attached Files</p>
+              <ul className="space-y-1.5">
+                {nb.sources.filter((s) => s.kind !== "web").map((s) => (
+                  <li
+                    key={s.id}
+                    className="group flex items-center gap-2 rounded-none border px-3 py-2"
+                    style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
+                  >
+                    <span className="shrink-0 text-sm" style={{ color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>&#128196;</span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
+                      {s.name}
+                    </span>
+                    <span className="shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)", color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>
+                      {s.kind}
+                    </span>
+                    <SmolderButton
+                      variant="danger"
+                      onClick={() => removeSource(s.id)}
+                      disabled={busy !== null}
+                      aria-label={`Remove ${s.name}`}
+                      className="shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[11px]"
+                    >
+                      ✕
+                    </SmolderButton>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Web Links */}
+          {nb.sources.filter((s) => s.kind === "web").length > 0 && (
+            <div>
+              <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Web Links</p>
+              <ul className="space-y-1.5">
+                {nb.sources.filter((s) => s.kind === "web").map((s) => (
+                  <li
+                    key={s.id}
+                    className="group flex items-center gap-2 rounded-none border px-3 py-2"
+                    style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)", backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
+                  >
+                    <span className="shrink-0 text-sm" style={{ color: "color-mix(in srgb, var(--lf-accent), transparent 30%)" }}>&#128279;</span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-300">
+                      {s.url ? (
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--lf-accent)]">
+                          {s.name}
+                        </a>
+                      ) : s.name}
+                    </span>
+                    <SmolderButton
+                      variant="danger"
+                      onClick={() => removeSource(s.id)}
+                      disabled={busy !== null}
+                      aria-label={`Remove ${s.name}`}
+                      className="shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[11px]"
+                    >
+                      ✕
+                    </SmolderButton>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       ) : (
         <p className="rounded-none border border-dashed px-3 py-4 text-center text-xs text-zinc-500" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)" }}>
           Add reference files or web links to ground the lesson plan.
