@@ -43,6 +43,7 @@ export interface PlanSection {
 export interface SessionPlan {
   sessionNumber: number;
   sections: PlanSection[];
+  approvedSectionIds?: string[];
 }
 
 export interface PlanResult {

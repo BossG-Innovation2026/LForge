@@ -593,13 +593,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   async function approveSection(sectionId: string) {
     setSectionBusy(sectionId);
     setError(null);
+    const isMulti = !!(nb.result?.sessionPlans && nb.result.sessionPlans.length > 1);
     try {
       const data = await apiCall<{ notebook: Notebook }>(
         `/api/notebooks/${nb.id}/approve`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sectionId }),
+          body: JSON.stringify({ sectionId, sessionIndex: isMulti ? activeSessionTab : undefined }),
         }
       );
       setNb(data.notebook);
@@ -614,10 +615,15 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
   async function approveAll() {
     setError(null);
+    const isMulti = !!(nb.result?.sessionPlans && nb.result.sessionPlans.length > 1);
     try {
       const data = await apiCall<{ notebook: Notebook }>(
         `/api/notebooks/${nb.id}/approve-all`,
-        { method: "POST" }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionIndex: isMulti ? activeSessionTab : undefined }),
+        }
       );
       setNb(data.notebook);
     } catch (err) {
@@ -715,6 +721,18 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     return nb.sources[Number(m[1]) - 1]?.name;
   };
 
+  const isMultiSession = !!(nb.result?.sessionPlans && nb.result.sessionPlans.length > 1);
+
+  // For multi-session: active session approval state
+  const activeSessionSections = isMultiSession
+    ? nb.result!.sessionPlans![activeSessionTab].sections
+    : (nb.result?.sections ?? []);
+
+  const activeApprovedIds = new Set(
+    activeSessionSections.filter((s) => s.approvedAt).map((s) => s.sectionId)
+  );
+
+  // Single-session fallback
   const approvedIds = new Set(
     (nb.result?.sections ?? []).filter((s) => s.approvedAt).map((s) => s.sectionId)
   );
@@ -722,10 +740,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     approvedIds.has(id) || (id === COMPETENCY_SECTION_ID && competencySet);
 
   const totalSections = nb.template?.sections.length ?? nb.result?.sections.length ?? 0;
-  const approvedCount = nb.template
-    ? nb.template.sections.filter((t) => sectionSatisfied(t.id)).length
-    : (nb.result?.sections ?? []).filter((s) => s.approvedAt).length;
-  const allApproved = totalSections > 0 && approvedCount === totalSections;
+
+  // Progress: active session only
+  const activeTotal = isMultiSession ? activeSessionSections.length : totalSections;
+  const activeApprovedCount = isMultiSession
+    ? activeSessionSections.filter((s) => s.approvedAt).length
+    : (nb.template
+        ? nb.template.sections.filter((t) => sectionSatisfied(t.id)).length
+        : (nb.result?.sections ?? []).filter((s) => s.approvedAt).length);
+
+  // Gotcha gate: ALL sessions fully approved
+  const allSessionsApproved = isMultiSession
+    ? nb.result!.sessionPlans!.every((sp) =>
+        sp.sections.every((s) => s.approvedAt)
+      )
+    : (totalSections > 0 && activeApprovedCount === totalSections);
 
   const genBlockReason =
     !nb.template || nb.template.sections.length === 0
@@ -733,9 +762,13 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       : null;
   const canGenerate = !genBlockReason && !generating && busy !== "sources";
 
-  const unapprovedWithContent = nb.result?.sections.filter(
-    (s) => !s.approvedAt && s.content && s.sectionId !== COMPETENCY_SECTION_ID
-  ) ?? [];
+  const unapprovedWithContent = isMultiSession
+    ? activeSessionSections.filter(
+        (s) => !s.approvedAt && s.content && s.sectionId !== COMPETENCY_SECTION_ID
+      )
+    : (nb.result?.sections.filter(
+        (s) => !s.approvedAt && s.content && s.sectionId !== COMPETENCY_SECTION_ID
+      ) ?? []);
 
   /* References panel */
   const referencesBlock = (
@@ -1002,23 +1035,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <SmolderButton
                 variant="forge"
                 onClick={exportDocx}
-                disabled={!nb.result || !allApproved || busy !== null}
+                disabled={!nb.result || !allSessionsApproved || busy !== null}
                 title={
-                  nb.result && !allApproved
-                    ? `${approvedCount} of ${totalSections} sections ready`
+                  nb.result && !allSessionsApproved
+                    ? `Not all sessions approved yet`
                     : undefined
                 }
                 className="shrink-0 rounded-none px-4 py-2 font-mono text-sm font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {busy === "export"
-                  ? "Preparing…"
-                  : allApproved
-                    ? "Gotcha"
-                    : "Gotcha"}
+                {busy === "export" ? "Preparing…" : "Gotcha"}
               </SmolderButton>
-              {nb.result && !allApproved && (
+              {nb.result && !allSessionsApproved && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
-                  {approvedCount} of {totalSections} ready
+                  {isMultiSession
+                    ? `Session ${activeSessionTab + 1}: ${activeApprovedCount}/${activeTotal} ready`
+                    : `${activeApprovedCount} of ${activeTotal} ready`}
                 </span>
               )}
             </div>
@@ -1217,49 +1248,57 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       disabled={generating || busy !== null}
                       className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
                     >
-                      Approve all
+                      {isMultiSession ? `Approve Session ${activeSessionTab + 1}` : "Approve all"}
                     </SmolderButton>
                   )}
                   <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">
-                    {approvedCount}/{totalSections} ready
+                    {activeApprovedCount}/{activeTotal} ready
                   </p>
                 </div>
               </div>
               <div
                 role="progressbar"
                 aria-valuemin={0}
-                aria-valuemax={totalSections}
-                aria-valuenow={approvedCount}
+                aria-valuemax={activeTotal}
+                aria-valuenow={activeApprovedCount}
                 className="h-1.5 w-full overflow-hidden rounded-none"
                 style={{ backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}
               >
                 <div
                   className={`h-full transition-all duration-300 ${
-                    allApproved
+                    activeApprovedCount === activeTotal && activeTotal > 0
                       ? "bg-[var(--lf-accent)] shadow-[0_0_12px_rgba(0,255,156,0.7)]"
                       : "bg-[var(--lf-accent)]/50"
                   }`}
-                  style={{ width: `${totalSections ? (approvedCount / totalSections) * 100 : 0}%` }}
+                  style={{ width: `${activeTotal ? (activeApprovedCount / activeTotal) * 100 : 0}%` }}
                 />
               </div>
 
               {/* Session tabs for multi-session */}
               {nb.result.sessionPlans && nb.result.sessionPlans.length > 1 && (
                 <div className="flex gap-1 border-b" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
-                  {nb.result.sessionPlans.map((sp, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setActiveSessionTab(i)}
-                      className={`px-4 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
-                        activeSessionTab === i
-                          ? "border-b-2 border-[var(--lf-accent)] text-[var(--lf-accent)]"
-                          : "text-zinc-500 hover:text-zinc-300"
-                      }`}
-                    >
-                      Session {sp.sessionNumber}
-                    </button>
-                  ))}
+                  {nb.result.sessionPlans.map((sp, i) => {
+                    const spApproved = sp.sections.filter((s) => s.approvedAt).length;
+                    const spTotal = sp.sections.length;
+                    const spDone = spApproved === spTotal && spTotal > 0;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveSessionTab(i)}
+                        className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+                          activeSessionTab === i
+                            ? "border-b-2 border-[var(--lf-accent)] text-[var(--lf-accent)]"
+                            : "text-zinc-500 hover:text-zinc-300"
+                        }`}
+                      >
+                        Session {sp.sessionNumber}
+                        <span className={`text-[10px] ${spDone ? "text-[var(--lf-accent)]" : "text-zinc-600"}`}>
+                          {spDone ? "✓" : `${spApproved}/${spTotal}`}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 

@@ -98,15 +98,28 @@ function deriveReferences(notebook: Notebook): string {
     .join("\n");
 }
 
-export function notebookToFillFields(notebook: Notebook): Record<string, string> {
+function computeSessionDate(baseDate: string, sessionIndex: number): string {
+  if (!baseDate.trim()) return baseDate;
+  if (sessionIndex === 0) return baseDate;
+  const parsed = new Date(baseDate);
+  if (isNaN(parsed.getTime())) {
+    // Unparseable — just append session label
+    return `${baseDate} (Session ${sessionIndex + 1})`;
+  }
+  parsed.setDate(parsed.getDate() + sessionIndex);
+  return parsed.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+}
+
+export function notebookToFillFieldsForSession(notebook: Notebook, sessionIndex: number): Record<string, string> {
   const d = notebook.details ?? {};
-  const byId = new Map(
-    (notebook.result?.sections ?? []).map((s) => [s.sectionId, s])
-  );
+  const sp = notebook.result?.sessionPlans?.[sessionIndex];
+  const sections = sp ? sp.sections : (notebook.result?.sections ?? []);
+  const byId = new Map(sections.map((s) => [s.sectionId, s]));
   const content = (id: string): string => byId.get(id)?.content ?? "";
+
   const fields: Record<string, string> = {};
   fields[M.title] = notebook.title;
-  fields[M.date] = d.date ?? "";
+  fields[M.date] = computeSessionDate(d.date ?? "", sessionIndex);
   fields[M.learningArea] = d.learningArea ?? "";
   fields[M.teachers] = (d.teachers ?? "").toUpperCase();
   fields[M.gradeSection] = d.gradeSection ?? "";
@@ -115,42 +128,20 @@ export function notebookToFillFields(notebook: Notebook): Record<string, string>
   fields[M.aiDeclaration] = DEFAULT_AI_DECLARATION;
   fields[M.preparedBy] = (d.teachers ?? "").toUpperCase();
   fields[M.position] = d.position ?? "";
-  fields[M.competency] = content("sec-1");
 
-  const sessionPlans = notebook.result?.sessionPlans;
-  if (sessionPlans && sessionPlans.length > 1) {
-    // Multi-session: stack all sessions for each section slot
-    const getSectionAcrossSessions = (secId: string): string =>
-      sessionPlans
-        .map((sp) => {
-          const sec = sp.sections.find((s) => s.sectionId === secId);
-          return sec?.content
-            ? `--- Session ${sp.sessionNumber} ---\n${sec.content}`
-            : null;
-        })
-        .filter(Boolean)
-        .join("\n\n");
+  // competency always from the main result
+  const mainByid = new Map((notebook.result?.sections ?? []).map((s) => [s.sectionId, s]));
+  fields[M.competency] = mainByid.get("sec-1")?.content ?? "";
 
-    fields[M.objectives] = getSectionAcrossSessions("sec-2");
-    fields[M.learnerContext] = getSectionAcrossSessions("sec-3");
-    fields[M.preLesson] = getSectionAcrossSessions("sec-4");
-    fields[M.flow] = getSectionAcrossSessions("sec-5");
-    fields[M.resources] = getSectionAcrossSessions("sec-6");
-    fields[M.integration] = getSectionAcrossSessions("sec-7");
-    fields[M.formativeAssessment] = getSectionAcrossSessions("sec-8");
-    fields[M.extendedLearning] = getSectionAcrossSessions("sec-9");
-    fields[M.reflections] = getSectionAcrossSessions("sec-10");
-  } else {
-    fields[M.objectives] = content("sec-2");
-    fields[M.learnerContext] = content("sec-3");
-    fields[M.preLesson] = content("sec-4");
-    fields[M.flow] = content("sec-5");
-    fields[M.resources] = content("sec-6");
-    fields[M.integration] = content("sec-7");
-    fields[M.formativeAssessment] = content("sec-8");
-    fields[M.extendedLearning] = content("sec-9");
-    fields[M.reflections] = content("sec-10");
-  }
+  fields[M.objectives] = content("sec-2");
+  fields[M.learnerContext] = content("sec-3");
+  fields[M.preLesson] = content("sec-4");
+  fields[M.flow] = content("sec-5");
+  fields[M.resources] = content("sec-6");
+  fields[M.integration] = content("sec-7");
+  fields[M.formativeAssessment] = content("sec-8");
+  fields[M.extendedLearning] = content("sec-9");
+  fields[M.reflections] = content("sec-10");
   return fields;
 }
 

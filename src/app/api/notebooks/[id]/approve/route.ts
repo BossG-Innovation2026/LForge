@@ -6,7 +6,6 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-/** Toggle approval for one generated section. */
 export async function POST(request: NextRequest, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
@@ -15,29 +14,46 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
     }
     if (!notebook.result) {
-      return NextResponse.json(
-        { error: "Generate a lesson plan first." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Generate a lesson plan first." }, { status: 400 });
     }
 
     const body = (await request.json().catch(() => null)) as {
       sectionId?: unknown;
+      sessionIndex?: unknown;
     } | null;
+
     const sectionId = typeof body?.sectionId === "string" ? body.sectionId : "";
-    const section = notebook.result.sections.find((s) => s.sectionId === sectionId);
-    if (!section) {
-      return NextResponse.json({ error: "Section not found." }, { status: 400 });
-    }
+    const sessionIndex = typeof body?.sessionIndex === "number" ? body.sessionIndex : -1;
 
-    if (section.approvedAt) {
-      delete section.approvedAt;
+    const now = new Date().toISOString();
+
+    if (sessionIndex >= 0 && notebook.result.sessionPlans && notebook.result.sessionPlans[sessionIndex]) {
+      // Multi-session: toggle approval in the session plan
+      const sp = notebook.result.sessionPlans[sessionIndex];
+      const section = sp.sections.find((s) => s.sectionId === sectionId);
+      if (!section) {
+        return NextResponse.json({ error: "Section not found." }, { status: 400 });
+      }
+      if (section.approvedAt) {
+        delete section.approvedAt;
+      } else {
+        section.approvedAt = now;
+      }
     } else {
-      section.approvedAt = new Date().toISOString();
+      // Single session
+      const section = notebook.result.sections.find((s) => s.sectionId === sectionId);
+      if (!section) {
+        return NextResponse.json({ error: "Section not found." }, { status: 400 });
+      }
+      if (section.approvedAt) {
+        delete section.approvedAt;
+      } else {
+        section.approvedAt = now;
+      }
     }
-    notebook.updatedAt = new Date().toISOString();
-    await saveNotebook(notebook);
 
+    notebook.updatedAt = now;
+    await saveNotebook(notebook);
     return NextResponse.json({ notebook });
   } catch (error) {
     return jsonError(error);
