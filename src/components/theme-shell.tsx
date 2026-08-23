@@ -10,6 +10,7 @@ import {
   ThemePicker,
   type ThemeId,
 } from "@/lib/themes";
+import ForgeBackground from "@/components/forge-background";
 
 export default function ThemeShell({ children }: { children: React.ReactNode }) {
   const [themeId, setThemeId] = useState<ThemeId>("matrix");
@@ -30,6 +31,7 @@ export default function ThemeShell({ children }: { children: React.ReactNode }) 
 
   return (
     <>
+      <ForgeBackground />
       <div className="fixed right-3 top-3 z-50">
         <ThemePicker current={themeId} onChange={handleChange} />
       </div>
