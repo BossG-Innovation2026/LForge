@@ -102,12 +102,12 @@ export function notebookToFillFields(notebook: Notebook): Record<string, string>
   fields[M.title] = notebook.title;
   fields[M.date] = d.date ?? "";
   fields[M.learningArea] = d.learningArea ?? "";
-  fields[M.teachers] = d.teachers ?? "";
+  fields[M.teachers] = (d.teachers ?? "").toUpperCase();
   fields[M.gradeSection] = d.gradeSection ?? "";
   fields[M.sessions] = d.sessions ?? "";
   fields[M.references] = deriveReferences(notebook);
   fields[M.aiDeclaration] = DEFAULT_AI_DECLARATION;
-  fields[M.preparedBy] = d.teachers ?? "";
+  fields[M.preparedBy] = (d.teachers ?? "").toUpperCase();
   fields[M.position] = d.position ?? "";
   fields[M.competency] = content("sec-1");
   fields[M.objectives] = content("sec-2");
@@ -129,6 +129,16 @@ export function applyFieldsToXml(xml: string, fields: Record<string, string>): s
       ? replaceTextOnly(out, marker, value)
       : replaceParagraphContaining(out, marker, value);
   }
+  // Set Bookman Old Style as default font for all runs
+  out = out.replace(
+    /<w:rPr>/g,
+    '<w:rPr><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/>'
+  );
+  // Add run properties to runs that don't have them
+  out = out.replace(
+    /<w:r(?![^>]*>)(?!.*<w:rPr>)/g,
+    '<w:r><w:rPr><w:rFonts w:ascii="Bookman Old Style" w:hAnsi="Bookman Old Style" w:cs="Bookman Old Style"/></w:rPr>'
+  );
   return out;
 }
 
