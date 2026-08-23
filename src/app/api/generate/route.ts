@@ -21,8 +21,11 @@ interface GenerateBody {
 async function fetchWebSources(topic: string, standards: string): Promise<SourceDoc[]> {
   const query = `${topic} ${standards} DepEd Philippines lesson curriculum`.slice(0, 200);
   const results = await searchWeb(query, 3);
+  const now = new Date().toISOString();
   return searchResultsToSourceDocs(results).map((s, i) => ({
     id: `web-search-${i}`,
+    chars: s.text.length,
+    addedAt: now,
     ...s,
   }));
 }
