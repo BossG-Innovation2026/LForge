@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateFullPlan, generateSingleSection } from "@/lib/ai-providers";
 import { getNotebook, saveNotebook } from "@/lib/store";
 import { jsonError } from "@/lib/http";
+import { searchWeb, searchResultsToSourceDocs } from "@/lib/web-search";
+import type { SourceDoc } from "@/lib/types";
 
 export const maxDuration = 300;
 
-/** The Learning Competency section is authored by the teacher, never the AI. */
 const COMPETENCY_SECTION_ID = "sec-1";
 const COMPETENCY_FALLBACK_TITLE = "Learning Competency and Curriculum Standards";
 
@@ -15,6 +16,15 @@ interface GenerateBody {
   instructions?: string;
   feedback?: string;
   modelId?: string;
+}
+
+async function fetchWebSources(topic: string, standards: string): Promise<SourceDoc[]> {
+  const query = `${topic} ${standards} DepEd Philippines lesson curriculum`.slice(0, 200);
+  const results = await searchWeb(query, 3);
+  return searchResultsToSourceDocs(results).map((s, i) => ({
+    id: `web-search-${i}`,
+    ...s,
+  }));
 }
 
 export async function POST(request: NextRequest) {
@@ -29,34 +39,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
     }
     if (!notebook.template || notebook.template.sections.length === 0) {
-      return NextResponse.json(
-        { error: "Upload a lesson template first." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Upload a lesson template first." }, { status: 400 });
     }
 
     const instructions = body.instructions?.trim().slice(0, 4000) || undefined;
     const standards = notebook.details?.competency?.trim() || undefined;
     const learnerContext = notebook.details?.learnerContext?.trim() || undefined;
-    const hasSources = notebook.sources.length > 0;
+    const topic = notebook.title?.trim() || undefined;
+
+    // Build sources — use uploaded sources, or fetch up to 3 from the web
+    let sources: SourceDoc[] = notebook.sources;
+    if (sources.length === 0 && standards && topic) {
+      sources = await fetchWebSources(topic, standards);
+    }
 
     if (body.sectionId) {
-      // Regenerate a single section.
       if (body.sectionId === COMPETENCY_SECTION_ID) {
         return NextResponse.json(
-          {
-            error:
-              "The Learning Competency is set by you in Lesson details and cannot be regenerated.",
-          },
+          { error: "The Learning Competency is set by you in Lesson details and cannot be regenerated." },
           { status: 400 }
         );
       }
       if (!standards) {
         return NextResponse.json(
-          {
-            error:
-              "Set the Learning Competency & Curriculum Standards in Lesson details first.",
-          },
+          { error: "Set the Learning Competency & Curriculum Standards in Lesson details first." },
           { status: 400 }
         );
       }
@@ -65,7 +71,7 @@ export async function POST(request: NextRequest) {
         notebook.result?.sections.find((s) => s.sectionId === body.sectionId) ?? null;
 
       const section = await generateSingleSection({
-        sources: notebook.sources,
+        sources,
         sections: notebook.template.sections,
         targetSectionId: body.sectionId,
         instructions,
@@ -73,18 +79,14 @@ export async function POST(request: NextRequest) {
         previousContent: previous?.content,
         standards,
         learnerContext,
+        topic,
         modelId: body.modelId,
       });
 
       if (!notebook.result) {
-        notebook.result = {
-          generatedAt: new Date().toISOString(),
-          sections: [section],
-        };
+        notebook.result = { generatedAt: new Date().toISOString(), sections: [section] };
       } else {
-        const idx = notebook.result.sections.findIndex(
-          (s) => s.sectionId === section.sectionId
-        );
+        const idx = notebook.result.sections.findIndex((s) => s.sectionId === section.sectionId);
         if (idx >= 0) {
           notebook.result.sections[idx] = section;
         } else {
@@ -95,13 +97,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ notebook });
     }
 
-    // Full generation.
+    // Full generation
     if (!standards) {
       return NextResponse.json(
-        {
-          error:
-            "Set the Learning Competency & Curriculum Standards in Lesson details first. They anchor every other section.",
-        },
+        { error: "Set the Learning Competency & Curriculum Standards in Lesson details first. They anchor every other section." },
         { status: 400 }
       );
     }
@@ -109,16 +108,15 @@ export async function POST(request: NextRequest) {
     const competencyTitle =
       notebook.template.sections.find((s) => s.id === COMPETENCY_SECTION_ID)?.title ??
       COMPETENCY_FALLBACK_TITLE;
-    const generatable = notebook.template.sections.filter(
-      (s) => s.id !== COMPETENCY_SECTION_ID
-    );
+    const generatable = notebook.template.sections.filter((s) => s.id !== COMPETENCY_SECTION_ID);
 
     const sections = await generateFullPlan({
-      sources: notebook.sources,
+      sources,
       sections: generatable,
       instructions,
       standards,
       learnerContext,
+      topic,
       modelId: body.modelId,
     });
 

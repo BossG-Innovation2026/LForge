@@ -28,5 +28,8 @@
       "binding": "NOTEBOOKS_KV",
       "id": "ecdf5a8b321d4c37af57830ca2554a37"
     }
-  ]
+  ],
+  "vars": {
+    "BRAVE_SEARCH_API_KEY": ""
+  }
 }

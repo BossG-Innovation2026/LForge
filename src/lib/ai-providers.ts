@@ -118,15 +118,23 @@ export function getProviderEnvKey(provider: ProviderId): string {
 /* Shared prompt builders (provider-agnostic)                         */
 /* ------------------------------------------------------------------ */
 
-export const SYSTEM_INSTRUCTION = `You are LessonForge, an expert curriculum designer who writes practical, classroom-ready lesson plans.
+export const SYSTEM_INSTRUCTION = `You are LessonForge, an expert Filipino curriculum designer who writes practical, classroom-ready ILAW Framework lesson plans aligned with DepEd Order No. 016, s. 2026.
+
+PRIORITY ORDER (highest to lowest):
+1. TOPIC — The specific lesson topic is the central thread. Every section must serve it.
+2. COMPETENCY & PERFORMANCE STANDARD — The topic is anchored to and must fully satisfy these standards.
+3. LEARNER CONTEXT — This is critical. Every section must be shaped by the actual learners described: their strengths, barriers, readiness, and context. Do not write generic plans — write for THESE learners.
+4. SOURCES — Use provided sources as primary grounding. If sources were fetched from the web, cite them meaningfully.
 
 Core rules:
-1. If the teacher has provided sources, ground every substantive claim, fact, date, definition or example STRICTLY in those provided sources. Never invent facts, page numbers, URLs, statistics or quotations when sources are provided.
-2. If NO sources are provided by the teacher, use your training knowledge to write the lesson plan. Draw from established DepEd modules, DepEd order guidelines, and widely recognized pedagogical practices for Philippine Senior High School. You may reference well-known DepEd publications, CHED memoranda, and standard curriculum documents by their common names. Do not fabricate specific URLs or page numbers — instead reference documents by title and issuing body (e.g. "DepEd Order No. 016, s. 2026").
-3. If a template section cannot be meaningfully filled, still write it using sound pedagogy, but do not fabricate source content. You may leave a short bracketed note like "[Add specific exercise from textbook]" where the teacher must insert material.
-4. Write for teachers: concrete activities, timings, questions to ask, misconceptions to watch for.
-5. Content must be plain text. Use "- " for bullets and "1." for numbered steps. Do NOT use markdown headings, bold/italic markers, tables or code blocks inside section content.
-6. Keep each section proportional to its guidance: short guidance -> 2-4 sentences; detailed guidance -> structured bullets/steps.`;
+1. If the teacher has provided sources (uploaded files or web links), ground every substantive claim, fact, definition, and example STRICTLY in those sources. Never fabricate facts, page numbers, or quotations.
+2. If web-searched sources are provided (marked [WEB]), use them to enrich the plan — cite titles and URLs where relevant.
+3. If NO sources at all are available, draw from your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and SHS pedagogy. Reference documents by official title and issuing body only. Do not fabricate URLs or page numbers.
+4. The LEARNER CONTEXT section must be a refined, well-written version of what the teacher wrote — preserve every idea and nuance, improve the language and structure, but never change the meaning or strip out details.
+5. Every other section (Pre-Lesson, Flow, Assessment, etc.) must visibly reflect the learner context — activities, pacing, scaffolding, and support must match the actual classroom described.
+6. Write for teachers: concrete activities, suggested timings, questions to ask, misconceptions to watch for, inclusion strategies.
+7. Content must be plain text. Use "- " for bullets and "1." for numbered steps. Do NOT use markdown headings, bold/italic markers, tables, or code blocks.
+8. Keep each section proportional: short guidance → 2–4 sentences; detailed guidance → structured bullets/steps.`;
 
 export function sourceBlock(sources: SourceDoc[]): string {
   return sources
@@ -163,16 +171,20 @@ export function buildFullPlanPrompt(
   sections: TemplateSection[],
   standards?: string,
   instructions?: string,
-  learnerContext?: string
+  learnerContext?: string,
+  topic?: string
 ): string {
+  const topicBlock = topic
+    ? `\n## LESSON TOPIC (CENTRAL THREAD)\n"""\n${topic}\n"""\nThis is the specific content to be taught. All sections revolve around this topic. It must be anchored to the competency and performance standard below.\n`
+    : "";
   const sourceSection = sources.length > 0
     ? `## SOURCES\n${sourceBlock(sources)}\n`
-    : `## SOURCES\nNo reference files uploaded by the teacher.\nYou MUST rely on your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and standard Senior High School pedagogical practices.\nDo NOT fabricate specific URLs or page numbers. Reference documents by their official title and issuing body.\n`;
-  return `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
+    : `## SOURCES\nNo reference materials uploaded. Use your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and SHS pedagogy. Reference documents by official title and issuing body only. Do not fabricate URLs or page numbers.\n`;
+  return `${topicBlock}${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
 ## LESSON PLAN TEMPLATE
 ${sections
-  .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
-  .join("\n")}
+    .map((s) => `<${s.id}> ${s.title}${s.guidance ? `\nGuidance: ${s.guidance}` : ""}`)
+    .join("\n")}
 ## TASK
 Write the content for EVERY section listed above.
 - sectionId must be exactly the id in angle brackets (e.g. sec-1).
@@ -192,17 +204,21 @@ export function buildSingleSectionPrompt(
   instructions?: string,
   feedback?: string,
   previousContent?: string,
-  learnerContext?: string
+  learnerContext?: string,
+  topic?: string
 ): string {
   const target = sections.find((s) => s.id === targetSectionId);
   if (!target) throw new Error(`Unknown section "${targetSectionId}".`);
   const others = sections.filter((s) => s.id !== targetSectionId);
 
+  const topicBlock = topic
+    ? `\n## LESSON TOPIC (CENTRAL THREAD)\n"""\n${topic}\n"""\nThis is the specific content to be taught. All sections revolve around this topic.\n`
+    : "";
   const sourceSection = sources.length > 0
     ? `## SOURCES\n${sourceBlock(sources)}\n`
-    : `## SOURCES\nNo reference files uploaded by the teacher.\nYou MUST rely on your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and standard Senior High School pedagogical practices.\nDo NOT fabricate specific URLs or page numbers. Reference documents by their official title and issuing body.\n`;
+    : `## SOURCES\nNo reference materials uploaded. Use your training knowledge of Philippine DepEd curriculum, DepEd orders, CHED memoranda, and SHS pedagogy. Reference documents by official title and issuing body only.\n`;
 
-  return `${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
+  return `${topicBlock}${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${sourceSection}
 ## LESSON PLAN OUTLINE (other sections, for context)
 ${others.map((s) => `- ${s.title}`).join("\n") || "(none)"}
 
@@ -379,6 +395,7 @@ interface FullPlanArgs {
   instructions?: string;
   standards?: string;
   learnerContext?: string;
+  topic?: string;
   modelId?: string;
 }
 
@@ -388,10 +405,11 @@ export async function generateFullPlan({
   instructions,
   standards,
   learnerContext,
+  topic,
   modelId = DEFAULT_MODEL_ID,
 }: FullPlanArgs): Promise<PlanSection[]> {
   const refs = refIds(sources);
-  const prompt = buildFullPlanPrompt(sources, sections, standards, instructions, learnerContext);
+  const prompt = buildFullPlanPrompt(sources, sections, standards, instructions, learnerContext, topic);
   const data = (await callModel(modelId, prompt)) as {
     sections?: Array<{
       sectionId?: unknown;
@@ -451,6 +469,7 @@ interface SingleSectionArgs {
   previousContent?: string;
   standards?: string;
   learnerContext?: string;
+  topic?: string;
   modelId?: string;
 }
 
@@ -463,6 +482,7 @@ export async function generateSingleSection({
   previousContent,
   standards,
   learnerContext,
+  topic,
   modelId = DEFAULT_MODEL_ID,
 }: SingleSectionArgs): Promise<PlanSection> {
   const target = sections.find((s) => s.id === targetSectionId);
@@ -477,7 +497,8 @@ export async function generateSingleSection({
     instructions,
     feedback,
     previousContent,
-    learnerContext
+    learnerContext,
+    topic
   );
 
   const data = (await callModel(modelId, prompt)) as {

@@ -19,60 +19,61 @@ export const OFFICIAL_SECTIONS: OfficialSection[] = [
     id: "competency",
     title: "Learning Competency and Curriculum Standards",
     guidance:
-      "Write the competency/ies from the curriculum that we are targeting, and the content or performance standards applicable to the sessions.",
+      "Write the specific learning competency/ies from the curriculum guide that this lesson targets, along with the applicable content standard and performance standard.",
   },
   {
     id: "objectives",
     title: "Learning Objectives",
     guidance:
-      "Start with the sentence: At the end of this session/s the student should be able to: Then write exactly 3 bullet points using '- ' prefix. Each bullet is one direct statement of what the learner will know, do, or appreciate — no labels like Knowledge/Skills/Values, just the statement itself.",
+      "Start with: At the end of this session/s the student should be able to: Then write exactly 3 bullet points using '- ' prefix. Each bullet is one direct statement — no labels. Cover: what learners will know, what they will do, and what they will value or appreciate. Keep each to one sentence.",
   },
   {
     id: "learner-context",
     title: "Learner Context",
     guidance:
-      "Write your observations of your learners, and how they have been performing or responding to learning experiences recently. Include strengths, interests, and possible barriers to learning.",
+      "Refine the teacher's written learner context into a clear, well-structured paragraph or short bullets. Preserve every idea, nuance, and detail the teacher provided — only improve the language and organization. Include: learners' current performance and readiness level, their strengths and interests, any barriers to learning (disability, connectivity, language, socioeconomic factors), and how these will shape every section of this lesson plan.",
   },
   {
     id: "pre-lesson",
     title: "Pre-Lesson",
-    guidance: "Describe how you will help the learners get ready for the lesson.",
+    guidance:
+      "Describe concretely how you will prepare learners before the main lesson. Include: (1) a brief well-being or mood check-in activity suited to the learner context; (2) an activation strategy that surfaces prior knowledge connected to today's topic; (3) how you will connect this lesson to a past competency or previous learning experience; (4) a clear statement of the lesson objectives shared with the learners. Keep all activities appropriate for the specific learners described in the Learner Context.",
   },
   {
     id: "flow",
     title: "Flow",
     guidance:
-      "Describe the activities that you can implement in 1 or more sessions to meet the learning objectives. Apply the Learning Design Principles: make the objectives clear for the learners; guide learners before letting them try the task on their own; check the state of the learners' well-being, understanding, and mastery over the lesson; connect today's new concepts to past competencies; encourage collaboration among learners; invite learners to reflect on why this matters to them; ensure inclusion for learners' varied abilities, learning styles, and contexts.",
+      "Describe the session activities in sequence (label by time or phase: e.g. 'Day 1 – Introduction (15 min)'). Apply ALL six Learning Design Principles explicitly: (1) Make objectives clear — state how you will present the goals to learners. (2) Guided practice before independent work — model first, then scaffold, then release. (3) Check understanding and well-being — include at least one mid-lesson pulse check or formative moment. (4) Connect to past competencies — explicitly link today's concept to prior learning. (5) Encourage collaboration — include at least one paired or group activity. (6) Invite reflection — end each session with a prompt that asks learners why this matters to them. (7) Ensure inclusion — note specific accommodations for varied abilities, learning styles, and contexts described in the Learner Context.",
   },
   {
     id: "resources",
     title: "Learning Resources",
     guidance:
-      "List down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive. Include options and alternatives in case of emergencies.",
+      "List all learning resources needed. For each, note: what it is, where to get it, and whether it is freely available. Then include: (a) inclusive alternatives for learners with limited devices, connectivity, or special needs; (b) emergency alternatives (printed modules, radio/TV broadcast, take-home activity sheets) in case of school disruptions. Align resources to the specific learner context provided.",
   },
   {
     id: "integration",
     title: "Opportunities for Integration",
     guidance:
-      "Write down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write N/A if none.",
+      "Identify meaningful connections to other learning areas, special topics (Values Ed, Health, Career Guidance), or technology integration. For each connection write: the area, how it connects to today's topic, and one concrete activity that makes the integration visible. Write N/A only if no connection is genuinely possible.",
   },
   {
     id: "assessment",
     title: "Formative Assessment",
     guidance:
-      "Create a task, activity or questions to evaluate learning and provide feedback every now and then. Include ways for learners to ask for guidance or support throughout each session. Remember to provide appropriate accommodations so all learners can demonstrate their understanding (e.g., varied response formats, small group options, visual or auditory supports).",
+      "Design formative assessment for every phase of learning: (1) Before — a quick diagnostic to gauge entry knowledge. (2) During — at least two embedded checks (e.g., exit ticket, think-pair-share, thumbs up/down, short quiz). (3) After — a closing task that demonstrates understanding of the objective. For each assessment: state the task or question, how learners respond, and how the teacher will use the result. Include varied response formats (written, oral, drawing, performance) and small-group or one-on-one options for learners who need support. Note how learners can signal they need help during the session.",
   },
   {
     id: "extended-learning",
     title: "Extended Learning Opportunities",
     guidance:
-      "Suggest other learning experiences outside the classroom/class hours that learners may want to access to reinforce what they have learned, to spark their curiosities further, or that may provide them support in their areas of difficulty.",
+      "Suggest three tracks of extended learning outside class hours: (1) Reinforcement — for learners who need more support or did not yet meet the objective; provide a simple guided activity they can do at home. (2) Enrichment — for learners who are ready to go deeper; suggest a challenge, a real-world application, or a curiosity-sparking resource. (3) Support — for learners facing barriers (limited internet, home difficulties); suggest an offline or low-resource alternative. Keep suggestions realistic for the learner context described.",
   },
   {
     id: "reflections",
     title: "Reflections",
     guidance:
-      "Think about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents, or school leaders about your classroom experience? What would you like your instructional coach to help you with?",
+      "Guide the teacher through four reflection prompts: (1) What will I change for the next session based on how today went? (2) What are learners showing curiosity or enthusiasm about that I can build on? (3) What do I want to share with my co-teachers, parents, or school leaders about today's classroom experience? (4) What specific help do I want from my instructional coach? Write these as open-ended prompts followed by a short model response or note — the teacher will complete them after the lesson.",
   },
 ];
 
