@@ -1,12 +1,68 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
 import { extractText, SOURCE_ACCEPT } from "@/lib/client-extract";
 import { AI_MODELS, DEFAULT_MODEL_ID, getProviderLabel, type AIModel } from "@/lib/ai-providers";
 import SmolderButton from "@/components/smolder-button";
 
 const COMPETENCY_SECTION_ID = "sec-1";
+
+const FORGE_MESSAGES = [
+  "Gathering the Ore...",
+  "Smelting Raw Ideas...",
+  "Heating the Forge...",
+  "Hammering the First Draft...",
+  "Folding for Precision...",
+  "Tempering with ILAW...",
+  "Sharpening the Learning Design...",
+  "Polishing Every Detail...",
+  "Inspecting the Craftsmanship...",
+  "Delivering a Classroom-Ready Output...",
+];
+
+function ForgeOverlay({ multiSession }: { multiSession: boolean }) {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const cycle = () => {
+      setVisible(false);
+      setTimeout(() => {
+        setMsgIndex((i) => (i + 1) % FORGE_MESSAGES.length);
+        setVisible(true);
+      }, 400);
+    };
+    const id = setInterval(cycle, 2800);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/75 backdrop-blur-sm">
+      <div className="lf-panel lf-frame relative flex flex-col items-center gap-4 px-10 py-8 text-center">
+        <Spinner className="h-8 w-8 text-[var(--lf-accent)]" />
+        <p className="font-mono text-sm font-bold uppercase tracking-widest text-emerald-100">
+          Forging your lesson plan…
+        </p>
+        <p
+          className="min-h-[1.5rem] font-mono text-xs uppercase tracking-wider transition-opacity duration-400"
+          style={{
+            color: "var(--lf-accent)",
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.4s ease",
+          }}
+        >
+          {FORGE_MESSAGES[msgIndex]}
+        </p>
+        {multiSession && (
+          <p className="max-w-xs font-mono text-[10px] leading-relaxed text-zinc-600">
+            Generating sessions sequentially with continuity. This may take a few minutes.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Spinner({ className = "" }: { className?: string }) {
   return (
@@ -1422,20 +1478,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
         {/* Full-screen generation overlay */}
         {busy === "generate" && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="lf-panel lf-frame relative flex flex-col items-center gap-3 px-8 py-6">
-              <Spinner className="h-7 w-7 text-[var(--lf-accent)]" />
-              <p className="font-mono text-sm uppercase tracking-widest text-emerald-100">
-                Forging your lesson plan…
-              </p>
-              <p className="max-w-xs text-center font-mono text-xs leading-relaxed text-zinc-500">
-                {details.sessions && parseInt(details.sessions) > 1
-                  ? `Forging ${details.sessions} sessions sequentially with continuity. This may take a few minutes.`
-                  : "Anchoring on your competency standards, reading sources and filling every template section. This usually takes under a minute."
-                }
-              </p>
-            </div>
-          </div>
+          <ForgeOverlay multiSession={!!(details.sessions && parseInt(details.sessions) > 1)} />
         )}
       </main>
     </div>
