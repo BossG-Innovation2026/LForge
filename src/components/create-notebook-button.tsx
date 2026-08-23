@@ -110,7 +110,10 @@ export default function CreateNotebookButton() {
               Forging…
             </span>
           ) : (
-            <span className="relative z-10">Strike it while it hot</span>
+            <span className="relative z-10">
+              <span style={{ fontSize: "1.15em", letterSpacing: "0.12em" }}>STRIKE !!!</span>{" "}
+              while it hot
+            </span>
           )}
         </button>
 
