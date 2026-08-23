@@ -25,7 +25,7 @@ export const OFFICIAL_SECTIONS: OfficialSection[] = [
     id: "objectives",
     title: "Learning Objectives",
     guidance:
-      "Write exactly 3 bullet points: (1) Knowledge — what learners will know; (2) Skills — what learners will do; (3) Values — what learners will appreciate. Keep each to 1 sentence. Use '- ' prefix for each.",
+      "Start with the sentence: At the end of this session/s the student should be able to: Then write exactly 3 bullet points using '- ' prefix. Each bullet is one direct statement of what the learner will know, do, or appreciate — no labels like Knowledge/Skills/Values, just the statement itself.",
   },
   {
     id: "learner-context",
