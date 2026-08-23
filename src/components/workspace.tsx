@@ -432,10 +432,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   }
 
   async function saveDetailsFromRef(): Promise<void> {
-    setError(null);
     const d = detailsRef.current;
     try {
-      const data = await apiCall<{ notebook: Notebook }>(
+      await apiCall<{ notebook: Notebook }>(
         `/api/notebooks/${nb.id}/details`,
         {
           method: "PUT",
@@ -452,7 +451,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           }),
         }
       );
-      setNb(data.notebook);
       setDetailsSaved(true);
       setTimeout(() => setDetailsSaved(false), 2000);
     } catch (err) {
