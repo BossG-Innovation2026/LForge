@@ -1002,22 +1002,26 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   No references yet - the plan will rely on pedagogy only.
                 </p>
               )}
-              <div className="mt-3">
-                <SmolderButton
-                  variant="forge"
-                  onClick={generateAll}
-                  disabled={!canGenerate}
-                  className="w-full rounded-none px-6 py-4 font-mono text-base font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
-                >
-                  {busy === "generate" ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Spinner className="h-4 w-4" /> Generating…
-                    </span>
-                  ) : (
-                    "Strike It Now !!!"
-                  )}
-                </SmolderButton>
-              </div>
+            </div>
+          )}
+
+          {/* Strike It Now - full two-column width */}
+          {showDetailsForm && (
+            <div className="mb-6">
+              <SmolderButton
+                variant="forge"
+                onClick={generateAll}
+                disabled={!canGenerate}
+                className="w-full rounded-none px-6 py-4 font-mono text-base font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+              >
+                {busy === "generate" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Spinner className="h-4 w-4" /> Generating…
+                  </span>
+                ) : (
+                  "Strike It Now !!!"
+                )}
+              </SmolderButton>
             </div>
           )}
 
