@@ -896,10 +896,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               >
                 {busy === "generate" ? (
                   <span className="flex items-center justify-center gap-1.5">
-                    <Spinner className="h-3 w-3" /> Regenerating…
+                    <Spinner className="h-3 w-3" /> Forging…
                   </span>
                 ) : (
-                  "Strike It Now !!!"
+                  "YOU STRIKE, I'LL FORGE IT !!!"
                 )}
               </SmolderButton>
             </div>
@@ -1117,10 +1117,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               >
                 {busy === "generate" ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Spinner className="h-4 w-4" /> Generating…
+                    <Spinner className="h-4 w-4" /> Forging…
                   </span>
                 ) : (
-                  "Strike It Now !!!"
+                  "YOU STRIKE, I'LL FORGE IT !!!"
                 )}
               </SmolderButton>
             </div>
@@ -1426,11 +1426,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             <div className="lf-panel lf-frame relative flex flex-col items-center gap-3 px-8 py-6">
               <Spinner className="h-7 w-7 text-[var(--lf-accent)]" />
               <p className="font-mono text-sm uppercase tracking-widest text-emerald-100">
-                Generating your lesson plan…
+                Forging your lesson plan…
               </p>
               <p className="max-w-xs text-center font-mono text-xs leading-relaxed text-zinc-500">
                 {details.sessions && parseInt(details.sessions) > 1
-                  ? `Generating ${details.sessions} sessions sequentially with continuity. This may take a few minutes.`
+                  ? `Forging ${details.sessions} sessions sequentially with continuity. This may take a few minutes.`
                   : "Anchoring on your competency standards, reading sources and filling every template section. This usually takes under a minute."
                 }
               </p>
