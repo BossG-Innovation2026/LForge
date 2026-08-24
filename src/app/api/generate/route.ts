@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
     const sessionCount = parseSessionCount(notebook.details?.sessions);
 
     let sources: SourceDoc[] = notebook.sources;
-    if (sources.length === 0 && (topic || standards)) {
-      const webSources = await fetchWebSources(topic ?? "", standards ?? "");
+    if (sources.length === 0 && topic && standards) {
+      const webSources = await fetchWebSources(topic, standards);
       if (webSources.length > 0) {
         sources = webSources;
         notebook.sources = webSources;
