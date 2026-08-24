@@ -333,8 +333,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
   const [details, setDetails] = useState<NotebookDetails>(() => {
     const base = initialNotebook.details ?? {};
-    const hasAnyData = base.teachers?.trim() || base.learningArea?.trim() || base.gradeSection?.trim();
-    if (hasAnyData) return base;
+    const isEmpty = !base.teachers?.trim() && !base.learningArea?.trim() && !base.gradeSection?.trim() && !base.position?.trim() && !base.checkedBy?.trim() && !base.notedBy?.trim();
+    if (!isEmpty) return base;
     try {
       const saved = localStorage.getItem("lf-saved-fields");
       if (saved) {
