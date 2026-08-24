@@ -19,8 +19,13 @@ interface GenerateBody {
 }
 
 async function fetchWebSources(topic: string, standards: string): Promise<SourceDoc[]> {
-  const query = `${topic} ${standards} DepEd Philippines lesson curriculum`.slice(0, 200);
-  const results = await searchWeb(query, 3);
+  const parts = [
+    standards && `"${standards.slice(0, 120)}"`,
+    topic && `"${topic.slice(0, 120)}"`,
+    "DepEd Philippines SHS curriculum",
+  ].filter(Boolean);
+  const query = parts.join(" ").slice(0, 200);
+  const results = await searchWeb(query, 5);
   const now = new Date().toISOString();
   return searchResultsToSourceDocs(results).map((s, i) => ({
     id: `web-search-${i}`,
@@ -52,8 +57,8 @@ export async function POST(request: NextRequest) {
     const sessionCount = parseSessionCount(notebook.details?.sessions);
 
     let sources: SourceDoc[] = notebook.sources;
-    if (sources.length === 0 && topic) {
-      const webSources = await fetchWebSources(topic, standards ?? "");
+    if (sources.length === 0 && (topic || standards)) {
+      const webSources = await fetchWebSources(topic ?? "", standards ?? "");
       if (webSources.length > 0) {
         sources = webSources;
         notebook.sources = webSources;
