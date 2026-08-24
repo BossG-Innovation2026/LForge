@@ -30,6 +30,6 @@
     }
   ],
   "vars": {
-    "BRAVE_SEARCH_API_KEY": ""
+    "SERPER_API_KEY": ""
   }
 }

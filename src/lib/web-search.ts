@@ -5,26 +5,26 @@ export interface SearchResult {
 }
 
 export async function searchWeb(query: string, count = 3): Promise<SearchResult[]> {
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
+  const apiKey = process.env.SERPER_API_KEY;
   if (!apiKey) return [];
 
   try {
-    const params = new URLSearchParams({ q: query, count: String(count), search_lang: "en" });
-    const res = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
       headers: {
-        Accept: "application/json",
-        "Accept-Encoding": "gzip",
-        "X-Subscription-Token": apiKey,
+        "Content-Type": "application/json",
+        "X-API-KEY": apiKey,
       },
+      body: JSON.stringify({ q: query, num: count, hl: "en", gl: "ph" }),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
-      web?: { results?: Array<{ title?: string; url?: string; description?: string }> };
+      organic?: Array<{ title?: string; link?: string; snippet?: string }>;
     };
-    return (data.web?.results ?? []).slice(0, count).map((r) => ({
-      title: r.title ?? r.url ?? "Untitled",
-      url: r.url ?? "",
-      description: r.description ?? "",
+    return (data.organic ?? []).slice(0, count).map((r) => ({
+      title: r.title ?? r.link ?? "Untitled",
+      url: r.link ?? "",
+      description: r.snippet ?? "",
     }));
   } catch {
     return [];
