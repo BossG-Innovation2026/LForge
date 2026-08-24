@@ -468,6 +468,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   function detailsBody(): string {
     return JSON.stringify({
       competency: details.competency ?? "",
+      contentStandard: details.contentStandard ?? "",
       learningArea: details.learningArea ?? "",
       teachers: details.teachers ?? "",
       position: details.position ?? "",
@@ -475,6 +476,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       sessions: details.sessions ?? "",
       date: details.date ?? "",
       learnerContext: details.learnerContext ?? "",
+      checkedBy: details.checkedBy ?? "",
+      checkedByPosition: details.checkedByPosition ?? "",
+      notedBy: details.notedBy ?? "",
+      notedByPosition: details.notedByPosition ?? "",
     });
   }
 
@@ -508,6 +513,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             competency: d.competency ?? "",
+            contentStandard: d.contentStandard ?? "",
             learningArea: d.learningArea ?? "",
             teachers: d.teachers ?? "",
             position: d.position ?? "",
@@ -515,6 +521,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             sessions: d.sessions ?? "",
             date: d.date ?? "",
             learnerContext: d.learnerContext ?? "",
+            checkedBy: d.checkedBy ?? "",
+            checkedByPosition: d.checkedByPosition ?? "",
+            notedBy: d.notedBy ?? "",
+            notedByPosition: d.notedByPosition ?? "",
           }),
         }
       );

@@ -30,12 +30,18 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
 
     const details: NotebookDetails = {
       competency: clean(body.competency, MAX_FIELD),
+      contentStandard: clean(body.contentStandard, MAX_FIELD),
       learningArea: clean(body.learningArea, MAX_FIELD),
       teachers: clean(body.teachers, MAX_FIELD),
       position: clean(body.position, 200),
       gradeSection: clean(body.gradeSection, MAX_FIELD),
       sessions: clean(body.sessions, 200),
       date: clean(body.date, 100),
+      learnerContext: clean(body.learnerContext, MAX_FIELD),
+      checkedBy: clean(body.checkedBy, MAX_FIELD),
+      checkedByPosition: clean(body.checkedByPosition, 200),
+      notedBy: clean(body.notedBy, MAX_FIELD),
+      notedByPosition: clean(body.notedByPosition, 200),
     };
     for (const key of Object.keys(details) as (keyof NotebookDetails)[]) {
       if (details[key] === undefined) delete details[key];
