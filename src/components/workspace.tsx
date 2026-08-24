@@ -1079,45 +1079,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   </div>
                 </div>
 
-                {/* Competency - required */}
-                <div className="lf-panel lf-frame relative mb-2 p-3">
-                  <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                      Learning Competency &amp; Curriculum Standards{" "}
-                      <span aria-hidden="true">*</span>
-                    </span>
-                    <textarea
-                      value={details.competency ?? ""}
-                      onChange={(e) => {
-                        setDetails((d) => ({ ...d, competency: e.target.value }));
-                        scheduleAutoSave();
-                      }}
-                      rows={3}
-                      maxLength={2000}
-                      placeholder="Write here the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions."
-                      className="lf-input resize-none"
-                    />
-                  </label>
-                </div>
-
                 <div className="lf-panel space-y-2 p-3">
-                  {/* Content Standard - spans full width */}
-                  <div>
-                    <label className="block">
-                      <span className="lf-label mb-0.5 block">Content Standard</span>
-                      <textarea
-                        value={details.contentStandard ?? ""}
-                        onChange={(e) => {
-                          setDetails((d) => ({ ...d, contentStandard: e.target.value }));
-                          scheduleAutoSave();
-                        }}
-                        rows={3}
-                        maxLength={1000}
-                        placeholder="Write the specific content/topic to be taught — this is the central anchor for generation."
-                        className="lf-input resize-none"
-                      />
-                    </label>
-                  </div>
                   <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                     <DetailInput
                       label="Subject"
@@ -1189,6 +1151,42 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       placeholder="e.g. Principal"
                       maxLength={200}
                     />
+                  </div>
+                  {/* Competency - required */}
+                  <div>
+                    <label className="block">
+                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                        Learning Competency &amp; Curriculum Standards{" "}
+                        <span aria-hidden="true">*</span>
+                      </span>
+                      <textarea
+                        value={details.competency ?? ""}
+                        onChange={(e) => {
+                          setDetails((d) => ({ ...d, competency: e.target.value }));
+                          scheduleAutoSave();
+                        }}
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Write here the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions."
+                        className="lf-input resize-none"
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block">
+                      <span className="lf-label mb-0.5 block">Content Standard</span>
+                      <textarea
+                        value={details.contentStandard ?? ""}
+                        onChange={(e) => {
+                          setDetails((d) => ({ ...d, contentStandard: e.target.value }));
+                          scheduleAutoSave();
+                        }}
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="Write the specific content/topic to be taught — this is the central anchor for generation."
+                        className="lf-input resize-none"
+                      />
+                    </label>
                   </div>
                   <div>
                     <label className="block">
