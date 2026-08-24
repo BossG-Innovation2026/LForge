@@ -964,12 +964,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               </SmolderButton>
             </div>
             <div className="lf-panel space-y-2 p-3">
-              <DetailSummary
-                label="Learning Competency & Curriculum Standards"
-                value={details.competency}
-                clamp
-              />
-              <DetailSummary label="Content Standard" value={details.contentStandard} clamp />
               <DetailSummary label="Subject" value={details.learningArea} />
               <DetailSummary label="Name of Teacher/s" value={details.teachers} />
               <DetailSummary label="Position / Designation" value={details.position} />
@@ -981,6 +975,12 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <DetailSummary label="Reviewer Position" value={details.checkedByPosition} />
               <DetailSummary label="Noted by" value={details.notedBy} />
               <DetailSummary label="Noted by Position" value={details.notedByPosition} />
+              <DetailSummary
+                label="Learning Competency & Curriculum Standards"
+                value={details.competency}
+                clamp
+              />
+              <DetailSummary label="Content Standard" value={details.contentStandard} clamp />
               <SmolderButton
                 variant="forge"
                 onClick={generateAll}
