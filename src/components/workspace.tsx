@@ -331,9 +331,19 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
 
-  const [details, setDetails] = useState<NotebookDetails>(
-    initialNotebook.details ?? {}
-  );
+  const [details, setDetails] = useState<NotebookDetails>(() => {
+    const base = initialNotebook.details ?? {};
+    const hasAnyData = base.teachers?.trim() || base.learningArea?.trim() || base.gradeSection?.trim();
+    if (hasAnyData) return base;
+    try {
+      const saved = localStorage.getItem("lf-saved-fields");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...base, ...parsed };
+      }
+    } catch { /* ignore */ }
+    return base;
+  });
   const [detailsSaved, setDetailsSaved] = useState(false);
   const [detailsEditing, setDetailsEditing] = useState(false);
   const [activeSessionTab, setActiveSessionTab] = useState(0);
@@ -685,6 +695,19 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
       // Auto-delete the notebook after successful download
       try {
+        // Save selected fields to localStorage for reuse
+        const savedFields = {
+          learningArea: details.learningArea ?? "",
+          teachers: details.teachers ?? "",
+          position: details.position ?? "",
+          checkedBy: details.checkedBy ?? "",
+          checkedByPosition: details.checkedByPosition ?? "",
+          notedBy: details.notedBy ?? "",
+          notedByPosition: details.notedByPosition ?? "",
+          gradeSection: details.gradeSection ?? "",
+        };
+        localStorage.setItem("lf-saved-fields", JSON.stringify(savedFields));
+
         await fetch(`/api/notebooks/${nb.id}`, { method: "DELETE" });
       } catch { /* best-effort */ }
 
