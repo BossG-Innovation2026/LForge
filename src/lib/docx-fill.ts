@@ -32,7 +32,7 @@ const M = {
   notedByPosition: "{{LF_NOTED_BY_POSITION}}",
 } as const;
 
-const INLINE_MARKERS = new Set<string>([M.preparedBy, M.position, M.date]);
+const INLINE_MARKERS = new Set<string>([M.preparedBy, M.position, M.date, M.checkedBy, M.checkedByPosition, M.notedBy, M.notedByPosition]);
 
 function escapeXml(s: string): string {
   return s
