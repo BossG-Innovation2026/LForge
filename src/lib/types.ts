@@ -63,6 +63,10 @@ export interface NotebookDetails {
   sessions?: string;
   date?: string;
   learnerContext?: string;
+  checkedBy?: string;
+  checkedByPosition?: string;
+  notedBy?: string;
+  notedByPosition?: string;
 }
 
 export interface Notebook {

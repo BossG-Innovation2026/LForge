@@ -26,6 +26,10 @@ const M = {
   formativeAssessment: "{{LF_FORMATIVE_ASSESSMENT}}",
   extendedLearning: "{{LF_EXTENDED}}",
   reflections: "{{LF_REFLECTIONS}}",
+  checkedBy: "{{LF_CHECKED_BY}}",
+  checkedByPosition: "{{LF_CHECKED_BY_POSITION}}",
+  notedBy: "{{LF_NOTED_BY}}",
+  notedByPosition: "{{LF_NOTED_BY_POSITION}}",
 } as const;
 
 const INLINE_MARKERS = new Set<string>([M.preparedBy, M.position, M.date]);
@@ -128,6 +132,10 @@ export function notebookToFillFieldsForSession(notebook: Notebook, sessionIndex:
   fields[M.aiDeclaration] = DEFAULT_AI_DECLARATION;
   fields[M.preparedBy] = (d.teachers ?? "").toUpperCase();
   fields[M.position] = d.position ?? "";
+  fields[M.checkedBy] = (d.checkedBy ?? "").toUpperCase();
+  fields[M.checkedByPosition] = d.checkedByPosition ?? "";
+  fields[M.notedBy] = (d.notedBy ?? "").toUpperCase();
+  fields[M.notedByPosition] = d.notedByPosition ?? "";
 
   // competency always from the main result
   const mainByid = new Map((notebook.result?.sections ?? []).map((s) => [s.sectionId, s]));

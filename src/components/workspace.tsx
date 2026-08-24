@@ -977,6 +977,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <DetailSummary label="No. of Sessions" value={details.sessions} />
               <DetailSummary label="Date" value={details.date} />
               <DetailSummary label="Learner Context" value={details.learnerContext} clamp />
+              <DetailSummary label="Checked and Reviewed by" value={details.checkedBy} />
+              <DetailSummary label="Reviewer Position" value={details.checkedByPosition} />
+              <DetailSummary label="Noted by" value={details.notedBy} />
+              <DetailSummary label="Noted by Position" value={details.notedByPosition} />
               <SmolderButton
                 variant="forge"
                 onClick={generateAll}
@@ -1156,6 +1160,34 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       onChange={(v) => { setDetails((d) => ({ ...d, date: v })); scheduleAutoSave(); }}
                       placeholder="e.g. August 25, 2026"
                       maxLength={100}
+                    />
+                    <DetailInput
+                      label="Checked and Reviewed by"
+                      value={details.checkedBy ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, checkedBy: v })); scheduleAutoSave(); }}
+                      placeholder="Reviewer name"
+                      maxLength={500}
+                    />
+                    <DetailInput
+                      label="Reviewer Position / Designation"
+                      value={details.checkedByPosition ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, checkedByPosition: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. Department Head"
+                      maxLength={200}
+                    />
+                    <DetailInput
+                      label="Noted by"
+                      value={details.notedBy ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, notedBy: v })); scheduleAutoSave(); }}
+                      placeholder="Noting authority name"
+                      maxLength={500}
+                    />
+                    <DetailInput
+                      label="Noted by Position / Designation"
+                      value={details.notedByPosition ?? ""}
+                      onChange={(v) => { setDetails((d) => ({ ...d, notedByPosition: v })); scheduleAutoSave(); }}
+                      placeholder="e.g. Principal"
+                      maxLength={200}
                     />
                   </div>
                   <div>
