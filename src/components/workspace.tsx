@@ -924,7 +924,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       target="_blank"
                       rel="noopener noreferrer"
                       title={s.name || s.url}
-                      className="min-w-0 flex-1 truncate text-[11px] hover:underline"
+                      className="block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] hover:underline"
                       style={{ color: "var(--lf-accent)" }}
                     >
                       {s.name && s.name !== s.url ? s.name : s.url}
