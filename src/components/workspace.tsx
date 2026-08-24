@@ -949,6 +949,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           Add reference files or web links to ground the lesson plan.
         </p>
       )}
+      {nb.sourceWarning && (
+        <div className="mt-3 rounded-none border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+          <p className="font-mono text-[11px] leading-snug text-amber-400">{nb.sourceWarning}</p>
+        </div>
+      )}
     </section>
   );
 
@@ -1005,7 +1010,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 value={details.competency}
                 clamp
               />
-              <DetailSummary label="Content Standard" value={details.contentStandard} clamp />
+              <DetailSummary label="Content/Topic" value={details.contentStandard} clamp />
               <SmolderButton
                 variant="forge"
                 onClick={generateAll}
@@ -1199,7 +1204,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   </div>
                   <div>
                     <label className="block">
-                      <span className="lf-label mb-0.5 block">Content Standard</span>
+                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                        Content / Topic <span aria-hidden="true">*</span>
+                      </span>
                       <textarea
                         value={details.contentStandard ?? ""}
                         onChange={(e) => {

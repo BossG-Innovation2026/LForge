@@ -78,6 +78,7 @@ export interface Notebook {
   template: TemplateInfo | null;
   details?: NotebookDetails;
   result: PlanResult | null;
+  sourceWarning?: string;
 }
 
 export interface NotebookSummary {

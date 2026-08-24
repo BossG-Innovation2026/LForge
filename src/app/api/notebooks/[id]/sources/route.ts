@@ -111,6 +111,24 @@ export async function POST(request: NextRequest, ctx: Ctx) {
 
     if (added.length > 0) {
       notebook.sources.push(...added);
+
+      // Check source relevance against topic and competency
+      const topic = notebook.details?.contentStandard?.trim() || "";
+      const competency = notebook.details?.competency?.trim() || "";
+      if (topic || competency) {
+        const sourceText = added.map((s) => s.text.slice(0, 500).toLowerCase()).join(" ");
+        const topicWords = topic.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+        const compWords = competency.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+        const allKeywords = [...topicWords, ...compWords];
+        const matchCount = allKeywords.filter((kw) => sourceText.includes(kw)).length;
+        const relevance = allKeywords.length > 0 ? matchCount / allKeywords.length : 1;
+        if (relevance < 0.1 && allKeywords.length >= 2) {
+          notebook.sourceWarning = "Uploaded sources may not match your Content/Topic or Learning Competency. Results may be less accurate. Consider uploading relevant files or removing these sources.";
+        } else {
+          notebook.sourceWarning = undefined;
+        }
+      }
+
       await saveNotebook(notebook);
     }
 

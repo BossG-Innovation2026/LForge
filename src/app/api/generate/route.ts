@@ -110,6 +110,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Full generation
+    if (!topic) {
+      return NextResponse.json(
+        { error: "Set the Content / Topic in Lesson details first. It is the central anchor for generation." },
+        { status: 400 }
+      );
+    }
     if (!standards) {
       return NextResponse.json(
         { error: "Set the Learning Competency & Curriculum Standards in Lesson details first. They anchor every other section." },
