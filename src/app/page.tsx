@@ -36,7 +36,7 @@ export default function HomePage() {
       </header>
 
       <section className="lf-panel lf-frame relative w-full p-8">
-        <p className="max-w-xl text-xs leading-relaxed text-zinc-400">
+        <p className="forge-title mx-auto text-center font-mono text-sm leading-relaxed">
           Pedagogical authority remains absolute: Review. Refine. Approve.
         </p>
         <div className="mt-6">
