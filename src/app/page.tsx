@@ -37,9 +37,7 @@ export default function HomePage() {
 
       <section className="lf-panel lf-frame relative w-full p-8">
         <p className="max-w-xl text-xs leading-relaxed text-zinc-400">
-          Tempered in the fires of the ILAW Framework (DepEd Order No. 016, s. 2026).
-          Mined from the ore you provide. From Intentions to Ways Forward, every draft
-          is precision-forged and awaits your final strike.
+          Pedagogical authority remains absolute: Review. Refine. Approve.
         </p>
         <div className="mt-6">
           <CreateNotebookButton />
