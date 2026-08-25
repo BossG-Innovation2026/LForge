@@ -357,6 +357,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const hasSources = nb.sources.length > 0;
   const competencySet = Boolean(details.competency?.trim());
   const showDetailsForm = !nb.result || detailsEditing;
+  const [formMode, setFormMode] = useState<"easy" | "pro">(() => {
+    if (typeof window === "undefined") return "easy";
+    return (localStorage.getItem("lf-form-mode") as "easy" | "pro") || "easy";
+  });
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -1106,6 +1110,30 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                         ← Back to plan
                       </SmolderButton>
                     )}
+                    <label className="flex cursor-pointer items-center gap-2 select-none">
+                      <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${formMode === "easy" ? "text-[var(--lf-accent)]" : "text-zinc-500"}`}>Easy</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={formMode === "pro"}
+                        onClick={() => {
+                          const next = formMode === "easy" ? "pro" : "easy";
+                          setFormMode(next);
+                          try { localStorage.setItem("lf-form-mode", next); } catch {}
+                        }}
+                        className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors"
+                        style={{
+                          borderColor: "color-mix(in srgb, var(--lf-accent), transparent 60%)",
+                          backgroundColor: formMode === "pro" ? "var(--lf-accent)" : "color-mix(in srgb, var(--lf-bg), transparent 40%)",
+                        }}
+                      >
+                        <span
+                          className="pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform"
+                          style={{ transform: formMode === "pro" ? "translateX(17px)" : "translateX(2px)" }}
+                        />
+                      </button>
+                      <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${formMode === "pro" ? "text-[var(--lf-accent)]" : "text-zinc-500"}`}>Pro</span>
+                    </label>
                   </div>
                 </div>
 
