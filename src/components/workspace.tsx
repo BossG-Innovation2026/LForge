@@ -346,6 +346,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   });
   const [detailsSaved, setDetailsSaved] = useState(false);
   const [detailsEditing, setDetailsEditing] = useState(false);
+  const [identitySaved, setIdentitySaved] = useState(false);
   const [activeSessionTab, setActiveSessionTab] = useState(0);
 
   const sourceInputRef = useRef<HTMLInputElement>(null);
@@ -550,6 +551,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   function backToPlan(): void {
     setDetails(nb.details ?? {});
     setDetailsEditing(false);
+  }
+
+  function saveIdentity(): void {
+    setIdentitySaved(true);
+    saveDetailsFromRef();
   }
 
   /* ---------------- generation ---------------- */
@@ -1005,17 +1011,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <DetailSummary label="Grade Level and Section" value={details.gradeSection} />
               <DetailSummary label="No. of Sessions" value={details.sessions} />
               <DetailSummary label="Date" value={details.date} />
-              <DetailSummary label="Learner Context" value={details.learnerContext} clamp />
               <DetailSummary label="Checked and Reviewed by" value={details.checkedBy} />
               <DetailSummary label="Reviewer Position" value={details.checkedByPosition} />
               <DetailSummary label="Noted by" value={details.notedBy} />
               <DetailSummary label="Noted by Position" value={details.notedByPosition} />
-              <DetailSummary
-                label="Learning Competency & Curriculum Standards"
-                value={details.competency}
-                clamp
-              />
-              <DetailSummary label="Content/Topic" value={details.contentStandard} clamp />
               <SmolderButton
                 variant="forge"
                 onClick={generateAll}
@@ -1159,6 +1158,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
 
                 <div className="lf-panel space-y-2 p-3">
+                  {!identitySaved && (
+                    <>
                   <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                     <DetailInput
                       label="Subject"
@@ -1231,6 +1232,17 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                       maxLength={200}
                     />
                   </div>
+                  <div className="flex justify-end">
+                    <SmolderButton
+                      variant="forge"
+                      onClick={saveIdentity}
+                      className="rounded-none px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
+                    >
+                      Save Lesson Details
+                    </SmolderButton>
+                  </div>
+                  </>
+                  )}
                   {/* Competency - required */}
                   <div>
                     <label className="block">
