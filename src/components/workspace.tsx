@@ -1114,8 +1114,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </div>
           </div>
 
-          {activeView === "plan" ? (
-            <>
           {/* Setup row - lesson details */}
           {showDetailsForm && (
             <div className="mb-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
@@ -1624,6 +1622,21 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   );
                 });
               })()}
+            </div>
+          )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-32">
+              <span className="font-mono text-3xl font-bold uppercase tracking-wider" style={{
+                background: "linear-gradient(180deg, #fff5eb 0%, #ffcc66 25%, #ff6a00 55%, #cc3300 80%, #991a00 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                filter: "drop-shadow(0 0 8px rgba(255,106,0,0.6)) drop-shadow(0 0 20px rgba(255,60,0,0.3))",
+              }}>
+                Forging Soon
+              </span>
+              <p className="mt-3 font-mono text-xs text-zinc-500 uppercase tracking-wider">Assessment generation is under development</p>
             </div>
           )}
         </div>
