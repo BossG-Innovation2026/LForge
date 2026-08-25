@@ -4,4 +4,5 @@
 // `wrangler types`.
 interface CloudflareEnv {
   NOTEBOOKS_KV: KVNamespace;
+  STATS_KV: KVNamespace;
 }

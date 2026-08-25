@@ -1,8 +1,10 @@
 import CreateNotebookButton from "@/components/create-notebook-button";
+import { getStats } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stats = await getStats();
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-16 flex flex-col items-center justify-center">
       <header className="mb-10 text-center">
@@ -43,6 +45,14 @@ export default function HomePage() {
           <CreateNotebookButton />
         </div>
       </section>
+
+      <div className="mt-6 flex items-center gap-3 border-t pt-4 font-mono text-[11px] uppercase tracking-wider" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
+        <span className="text-zinc-500">Lesson Plan Minted</span>
+        <span className="forge-title text-sm font-bold">{stats.plans}</span>
+        <span className="text-zinc-700">|</span>
+        <span className="text-zinc-500">Assessment Refined</span>
+        <span className="forge-title text-sm font-bold">{stats.assessments}</span>
+      </div>
 
       <style>{`
         .forge-title {

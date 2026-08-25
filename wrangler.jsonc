@@ -27,6 +27,10 @@
     {
       "binding": "NOTEBOOKS_KV",
       "id": "ecdf5a8b321d4c37af57830ca2554a37"
+    },
+    {
+      "binding": "STATS_KV",
+      "id": "de6ba16e52254dccaf32509d76027661"
     }
   ],
   "vars": {

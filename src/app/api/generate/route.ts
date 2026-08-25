@@ -3,6 +3,7 @@ import { generateFullPlan, generateSingleSection, generateMultiSession, parseSes
 import { getNotebook, saveNotebook } from "@/lib/store";
 import { jsonError } from "@/lib/http";
 import { searchWeb, searchResultsToSourceDocs } from "@/lib/web-search";
+import { incrementPlanCount } from "@/lib/stats";
 import type { SourceDoc } from "@/lib/types";
 
 export const maxDuration = 300;
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     await saveNotebook(notebook);
+    incrementPlanCount(); // fire-and-forget, best-effort
     return NextResponse.json({ notebook });
   } catch (error) {
     return jsonError(error);
