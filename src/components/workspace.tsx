@@ -1701,6 +1701,61 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               <div className="lf-panel p-4 space-y-4">
                 <SectionHeading>Assessment Settings</SectionHeading>
 
+                {/* Learning Competency - auto-filled from lesson details */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Learning Competency &amp; Curriculum Standards <span aria-hidden="true">*</span>
+                    </span>
+                    <textarea
+                      value={details.competency ?? ""}
+                      rows={3}
+                      readOnly
+                      className="lf-input resize-none w-full opacity-70 cursor-not-allowed"
+                      placeholder="Auto-filled from Lesson Details"
+                    />
+                  </label>
+                  <p className="mt-1 font-mono text-[10px] text-zinc-500">From Lesson Details (read-only)</p>
+                </div>
+
+                {/* Content / Topic - auto-filled from lesson details */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Content / Topic <span aria-hidden="true">*</span>
+                    </span>
+                    <textarea
+                      value={details.contentStandard ?? ""}
+                      rows={2}
+                      readOnly
+                      className="lf-input resize-none w-full opacity-70 cursor-not-allowed"
+                      placeholder="Auto-filled from Lesson Details"
+                    />
+                  </label>
+                  <p className="mt-1 font-mono text-[10px] text-zinc-500">From Lesson Details (read-only)</p>
+                </div>
+
+                {/* Learner Context - auto-filled from lesson details */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Learner Context
+                    </span>
+                    <textarea
+                      value={details.learnerContext ?? ""}
+                      rows={2}
+                      readOnly
+                      className="lf-input resize-none w-full opacity-70 cursor-not-allowed"
+                      placeholder="Auto-filled from Lesson Details"
+                    />
+                  </label>
+                  <p className="mt-1 font-mono text-[10px] text-zinc-500">From Lesson Details (read-only)</p>
+                </div>
+
+                <div className="border-t pt-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
+                <SectionHeading>Assessment Configuration</SectionHeading>
+                </div>
+
                 {/* Assessment Type */}
                 <div>
                   <label className="block">
