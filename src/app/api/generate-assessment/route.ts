@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     }
 
     const sources: SourceDoc[] = notebook.sources;
-    const assessmentSections = officialAssessmentTemplateSections();
+    const numItems = body.numberOfItems ? parseInt(body.numberOfItems, 10) : 10;
+    const assessmentSections = officialAssessmentTemplateSections(numItems);
 
     const now = new Date().toISOString();
 

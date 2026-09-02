@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
     }
 
     const sources: SourceDoc[] = notebook.sources;
-    const assessmentSections = officialAssessmentTemplateSections();
+    const numItems = body.numberOfItems ? parseInt(body.numberOfItems, 10) : 
+      (notebook.assessmentResult?.details?.numberOfItems ? parseInt(notebook.assessmentResult.details.numberOfItems, 10) : 10);
+    const assessmentSections = officialAssessmentTemplateSections(numItems);
 
     // Find the target section
     const targetSection = assessmentSections.find((s) => s.id === body.sectionId);
