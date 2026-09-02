@@ -1174,16 +1174,48 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           </section>
         )}
 
-        {/* Assessment Configuration - shows when assessment tab is active */}
-        {activeView === "assessment" && (
+        {/* Assessment Configuration - shows when assessment tab is active and config saved */}
+        {activeView === "assessment" && assessmentConfigSaved && (
           <section>
             <div className="mb-2 flex items-center justify-between">
               <SectionHeading>Assessment Configuration</SectionHeading>
-              {assessmentConfigSaved && (
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--lf-accent)]">Saved!</span>
-              )}
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--lf-accent)]">Saved!</span>
             </div>
             <div className="lf-panel space-y-3 p-3">
+              {/* Learning Competency */}
+              <div>
+                <label className="block">
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Learning Competency
+                  </span>
+                  <textarea
+                    value={assessmentCompetency}
+                    onChange={(e) => setAssessmentCompetency(e.target.value)}
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="Write the competency/ies..."
+                    className="lf-input resize-none w-full"
+                  />
+                </label>
+              </div>
+
+              {/* Content / Topic */}
+              <div>
+                <label className="block">
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Content / Topic
+                  </span>
+                  <textarea
+                    value={assessmentTopic}
+                    onChange={(e) => setAssessmentTopic(e.target.value)}
+                    rows={2}
+                    maxLength={1000}
+                    placeholder="Write the specific content/topic..."
+                    className="lf-input resize-none w-full"
+                  />
+                </label>
+              </div>
+
               {/* Number of Items */}
               <div>
                 <label className="block">
@@ -1248,14 +1280,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   </select>
                 </label>
               </div>
-
-              <SmolderButton
-                variant="forge"
-                onClick={saveAssessmentConfig}
-                className="w-full rounded-none px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
-              >
-                Save Configuration
-              </SmolderButton>
             </div>
           </section>
         )}
@@ -1884,6 +1908,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
               </div>
 
               {/* Assessment Form */}
+              {!assessmentConfigSaved ? (
               <div className="lf-panel p-4 space-y-4">
                 <SectionHeading>Assessment Content</SectionHeading>
 
@@ -1922,7 +1947,87 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
 
                 <div className="border-t pt-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
-                <SectionHeading>Special Instructions</SectionHeading>
+                  <SectionHeading>Assessment Configuration</SectionHeading>
+                </div>
+
+                {/* Number of Items */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Number of Items
+                    </span>
+                    <input
+                      type="number"
+                      value={assessmentDetails.numberOfItems ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, numberOfItems: e.target.value }))}
+                      placeholder="e.g. 10"
+                      min="1"
+                      max="50"
+                      className="lf-input w-full"
+                    />
+                  </label>
+                </div>
+
+                {/* Item Types */}
+                <div>
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Item Types
+                  </span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {["Multiple Choice", "True/False", "Essay", "Matching", "Performance Task", "Fill in the Blank"].map((type) => (
+                      <label key={type} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={assessmentDetails.itemTypes?.includes(type) ?? false}
+                          onChange={(e) => {
+                            const current = assessmentDetails.itemTypes ?? [];
+                            if (e.target.checked) {
+                              setAssessmentDetails((d) => ({ ...d, itemTypes: [...current, type] }));
+                            } else {
+                              setAssessmentDetails((d) => ({ ...d, itemTypes: current.filter((t) => t !== type) }));
+                            }
+                          }}
+                          className="accent-[var(--lf-accent)]"
+                        />
+                        <span className="font-mono text-[11px] text-zinc-300">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Difficulty Level */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Difficulty Level
+                    </span>
+                    <select
+                      value={assessmentDetails.difficultyLevel ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, difficultyLevel: e.target.value }))}
+                      className="lf-input w-full"
+                    >
+                      <option value="">Select difficulty...</option>
+                      <option value="easy">Easy</option>
+                      <option value="average">Average (Mixed)</option>
+                      <option value="difficult">Difficult</option>
+                      <option value="blooms">Bloom&apos;s Taxonomy Levels</option>
+                    </select>
+                  </label>
+                </div>
+
+                <SmolderButton
+                  variant="forge"
+                  onClick={saveAssessmentConfig}
+                  disabled={!assessmentCompetency.trim() || !assessmentTopic.trim()}
+                  className="w-full rounded-none px-4 py-3 font-mono text-sm font-semibold uppercase tracking-wider"
+                >
+                  Save Configuration
+                </SmolderButton>
+              </div>
+              ) : (
+              <div className="lf-panel p-4 space-y-4">
+                <div className="border-t pt-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
+                  <SectionHeading>Special Instructions</SectionHeading>
                 </div>
 
                 {/* Special Instructions */}
@@ -1939,8 +2044,10 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   </label>
                 </div>
               </div>
+              )}
 
-              {/* Generate Button */}
+              {/* Generate Button - only show after config saved */}
+              {assessmentConfigSaved && (
               <SmolderButton
                 variant="forge"
                 onClick={generateAssessment}
@@ -1955,6 +2062,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                   "GENERATE ASSESSMENT"
                 )}
               </SmolderButton>
+              )}
 
               {/* Assessment Result */}
               {nb.assessmentResult && nb.assessmentResult.sections.length > 0 && (
