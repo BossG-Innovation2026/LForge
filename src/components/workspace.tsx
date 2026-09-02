@@ -373,6 +373,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [assessmentInstructions, setAssessmentInstructions] = useState("");
   const [assessmentCompetency, setAssessmentCompetency] = useState(nb.assessment?.competency ?? details.competency ?? "");
   const [assessmentTopic, setAssessmentTopic] = useState(nb.assessment?.topic ?? details.contentStandard ?? "");
+  const [assessmentSectionBusy, setAssessmentSectionBusy] = useState<string | null>(null);
+  const [assessmentEditingSection, setAssessmentEditingSection] = useState<string | null>(null);
+  const [assessmentEditText, setAssessmentEditText] = useState("");
+  const [assessmentFeedbackFor, setAssessmentFeedbackFor] = useState<string | null>(null);
+  const [assessmentFeedbackText, setAssessmentFeedbackText] = useState("");
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -727,6 +732,100 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       fail(err);
     } finally {
       setAssessmentBusy(false);
+    }
+  }
+
+  async function regenerateAssessmentSection(sectionId: string, useFeedback: boolean) {
+    setAssessmentSectionBusy(sectionId);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>("/api/generate-assessment/section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notebookId: nb.id,
+          sectionId,
+          instructions: assessmentInstructions,
+          feedback: useFeedback ? assessmentFeedbackText : undefined,
+          competency: assessmentCompetency,
+          topic: assessmentTopic,
+          modelId: selectedModel,
+          assessmentType: assessmentDetails.assessmentType,
+          numberOfItems: assessmentDetails.numberOfItems,
+          itemTypes: assessmentDetails.itemTypes,
+          difficultyLevel: assessmentDetails.difficultyLevel,
+          timeLimit: assessmentDetails.timeLimit,
+          totalPoints: assessmentDetails.totalPoints,
+        }),
+      });
+      setNb(data.notebook);
+      setAssessmentFeedbackFor(null);
+      setAssessmentFeedbackText("");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setAssessmentSectionBusy(null);
+    }
+  }
+
+  async function approveAssessmentSection(sectionId: string) {
+    setAssessmentSectionBusy(sectionId);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/assessment-approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId }),
+        }
+      );
+      setNb(data.notebook);
+      setAssessmentFeedbackFor(null);
+      setAssessmentFeedbackText("");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setAssessmentSectionBusy(null);
+    }
+  }
+
+  async function approveAllAssessment() {
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/assessment-approve-all`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      setNb(data.notebook);
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function saveAssessmentSection(sectionId: string) {
+    if (!assessmentEditText.trim()) return;
+    setAssessmentSectionBusy(sectionId);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>(
+        `/api/notebooks/${nb.id}/assessment-sections/${sectionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: assessmentEditText }),
+        }
+      );
+      setNb(data.notebook);
+      setAssessmentEditingSection(null);
+      setAssessmentEditText("");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setAssessmentSectionBusy(null);
     }
   }
 
@@ -1918,34 +2017,194 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                         <span className="ml-2 uppercase">({nb.assessmentResult.details.assessmentType})</span>
                       )}
                     </p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {nb.assessmentResult.sections.some((s) => !s.approvedAt) && (
+                        <SmolderButton
+                          variant="forge"
+                          onClick={approveAllAssessment}
+                          disabled={assessmentBusy || assessmentSectionBusy !== null}
+                          className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                        >
+                          Approve All
+                        </SmolderButton>
+                      )}
+                      <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">
+                        {nb.assessmentResult.sections.filter((s) => s.approvedAt).length}/{nb.assessmentResult.sections.length} ready
+                      </p>
+                    </div>
                   </div>
 
                   {/* Assessment Sections */}
-                  {nb.assessmentResult.sections.map((section) => (
-                    <article
-                      key={section.sectionId}
-                      className="lf-panel lf-frame space-y-3 p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <SectionHeading>{section.title}</SectionHeading>
-                      </div>
-                      <ContentBody content={section.content} />
-                      {section.sourceRefs.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
-                          {section.sourceRefs.map((ref) => (
-                            <span
-                              key={ref}
-                              title={refName(ref)}
-                              className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
-                              style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
-                            >
-                              [{ref}] {refName(ref)}
-                            </span>
-                          ))}
+                  {nb.assessmentResult.sections.map((section) => {
+                    const isApproved = Boolean(section.approvedAt);
+                    const isEditingThis = assessmentEditingSection === section.sectionId;
+
+                    return (
+                      <article
+                        key={section.sectionId}
+                        className={`rounded-none border p-5 shadow-sm transition-colors ${
+                          isApproved
+                            ? "border-[var(--lf-accent)]/45 shadow-[0_0_24px_rgba(0,255,156,0.06)]"
+                            : "border-[var(--lf-accent)]/15"
+                        }`}
+                        style={{ backgroundColor: "color-mix(in srgb, var(--lf-bg), transparent 20%)" }}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <h2 className="font-semibold text-emerald-50">{section.title}</h2>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {isApproved ? (
+                              <>
+                                <span className="border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 50%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                                  Approved ✓
+                                </span>
+                                <SmolderButton
+                                  variant="ghost"
+                                  onClick={() => approveAssessmentSection(section.sectionId)}
+                                  disabled={assessmentBusy || assessmentSectionBusy !== null}
+                                  className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                                >
+                                  Un-approve
+                                </SmolderButton>
+                              </>
+                            ) : (
+                              <>
+                                <SmolderButton
+                                  variant="muted"
+                                  onClick={() => {
+                                    if (isEditingThis) {
+                                      setAssessmentEditingSection(null);
+                                      setAssessmentEditText("");
+                                    } else {
+                                      setAssessmentEditingSection(section.sectionId);
+                                      setAssessmentEditText(section.content);
+                                      setAssessmentFeedbackFor(null);
+                                    }
+                                  }}
+                                  disabled={assessmentBusy || assessmentSectionBusy !== null}
+                                  className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                                >
+                                  {isEditingThis ? "Cancel edit" : "Edit"}
+                                </SmolderButton>
+                                <SmolderButton
+                                  variant="muted"
+                                  onClick={() => {
+                                    setAssessmentFeedbackFor(assessmentFeedbackFor === section.sectionId ? null : section.sectionId);
+                                    setAssessmentFeedbackText("");
+                                    setAssessmentEditingSection(null);
+                                  }}
+                                  disabled={assessmentBusy || assessmentSectionBusy !== null}
+                                  className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                                >
+                                  Refine
+                                </SmolderButton>
+                                <SmolderButton
+                                  variant="ghost"
+                                  onClick={() => regenerateAssessmentSection(section.sectionId, false)}
+                                  disabled={assessmentBusy || assessmentSectionBusy !== null}
+                                  className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider !text-emerald-300"
+                                >
+                                  {assessmentSectionBusy === section.sectionId ? (
+                                    <Spinner className="mr-1 inline h-3 w-3" />
+                                  ) : null}
+                                  Regenerate
+                                </SmolderButton>
+                                <SmolderButton
+                                  variant="forge"
+                                  onClick={() => approveAssessmentSection(section.sectionId)}
+                                  disabled={assessmentBusy || assessmentSectionBusy !== null}
+                                  className="flex items-center gap-1.5 rounded-none px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                                >
+                                  {assessmentSectionBusy === section.sectionId ? (
+                                    <Spinner className="h-3 w-3" />
+                                  ) : null}
+                                  Approve
+                                </SmolderButton>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </article>
-                  ))}
+
+                        {isEditingThis && (
+                          <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
+                            <textarea
+                              value={assessmentEditText}
+                              onChange={(e) => setAssessmentEditText(e.target.value)}
+                              rows={8}
+                              className="lf-input resize-y !text-sm"
+                            />
+                            <div className="mt-2 flex justify-end gap-2">
+                              <SmolderButton
+                                variant="muted"
+                                onClick={() => { setAssessmentEditingSection(null); setAssessmentEditText(""); }}
+                                className="rounded-none px-2 py-1 font-mono text-[11px] uppercase tracking-wider"
+                              >
+                                Cancel
+                              </SmolderButton>
+                              <SmolderButton
+                                variant="forge"
+                                onClick={() => saveAssessmentSection(section.sectionId)}
+                                disabled={!assessmentEditText.trim() || assessmentSectionBusy === section.sectionId}
+                                className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                              >
+                                {assessmentSectionBusy === section.sectionId ? <Spinner className="mr-1 inline h-3 w-3" /> : null}
+                                Save
+                              </SmolderButton>
+                            </div>
+                          </div>
+                        )}
+
+                        {assessmentFeedbackFor === section.sectionId && (
+                          <div className="mb-3 rounded-none border p-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 75%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}>
+                            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--lf-accent)]">
+                              Revision instructions
+                            </p>
+                            <textarea
+                              value={assessmentFeedbackText}
+                              onChange={(e) => setAssessmentFeedbackText(e.target.value)}
+                              rows={2}
+                              maxLength={2000}
+                              placeholder="What should the AI change or improve?"
+                              className="lf-input resize-none !text-sm"
+                            />
+                            <div className="mt-2 flex justify-end">
+                              <SmolderButton
+                                variant="forge"
+                                onClick={() => regenerateAssessmentSection(section.sectionId, true)}
+                                disabled={!assessmentFeedbackText.trim() || assessmentBusy || assessmentSectionBusy !== null}
+                                className="rounded-none px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider"
+                              >
+                                Apply revision
+                              </SmolderButton>
+                            </div>
+                          </div>
+                        )}
+
+                        {assessmentSectionBusy === section.sectionId && !isEditingThis ? (
+                          <div className="flex items-center gap-2 py-4 font-mono text-sm uppercase tracking-wider text-zinc-400">
+                            <Spinner className="h-4 w-4 text-[var(--lf-accent)]" />
+                            Rewriting this section...
+                          </div>
+                        ) : !isEditingThis ? (
+                          <ContentBody content={section.content} />
+                        ) : null}
+
+                        {section.sourceRefs.length > 0 && !isEditingThis && (
+                          <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                            {section.sourceRefs.map((ref) => (
+                              <span
+                                key={ref}
+                                title={refName(ref)}
+                                className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                                style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
+                              >
+                                [{ref}] {refName(ref)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </div>
