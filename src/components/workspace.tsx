@@ -703,7 +703,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
   async function saveAssessmentConfig() {
     setAssessmentConfigSaved(true);
-    setTimeout(() => setAssessmentConfigSaved(false), 2000);
   }
 
   async function generateAssessment() {
