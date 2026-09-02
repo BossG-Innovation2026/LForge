@@ -46,13 +46,6 @@ export const ASSESSMENT_END_SECTIONS: AssessmentTemplateSection[] = [
 export function officialAssessmentTemplateSections(numberOfItems: number = 10): TemplateSection[] {
   const sections: TemplateSection[] = [];
 
-  // Add overview
-  sections.push({
-    id: "assessment-1",
-    title: ASSESSMENT_BASE_SECTIONS[0].title,
-    guidance: ASSESSMENT_BASE_SECTIONS[0].guidance,
-  });
-
   // Add individual item sections
   for (let i = 1; i <= numberOfItems; i++) {
     sections.push({
