@@ -19,7 +19,7 @@ export const ASSESSMENT_ITEM_SECTION: AssessmentTemplateSection = {
   id: "item",
   title: "Item",
   guidance:
-    "Generate a single assessment item/question. Include: (1) the question stem clearly testing the learning competency; (2) answer choices for multiple choice (A-D) or true/false; (3) the correct answer; (4) a brief explanation of why it's correct. Make it appropriate for the grade level.",
+    "Generate a single assessment item. Do NOT prefix with 'Question' or 'Q:'. Just write the item directly. Include: (1) the item stem clearly testing the learning competency; (2) answer choices for multiple choice (A-D) or true/false; (3) the correct answer; (4) a brief explanation of why it's correct. Make it appropriate for the grade level.",
 };
 
 export const ASSESSMENT_END_SECTIONS: AssessmentTemplateSection[] = [
