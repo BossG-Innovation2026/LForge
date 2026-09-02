@@ -703,3 +703,150 @@ export async function generateMultiSession({
   }
   return sessionPlans;
 }
+
+/* ------------------------------------------------------------------ */
+/* Assessment generation                                               */
+/* ------------------------------------------------------------------ */
+
+interface AssessmentArgs {
+  sources: SourceDoc[];
+  sections: TemplateSection[];
+  instructions?: string;
+  standards?: string;
+  learnerContext?: string;
+  topic?: string;
+  assessmentType?: string;
+  numberOfItems?: string;
+  itemTypes?: string[];
+  difficultyLevel?: string;
+  timeLimit?: string;
+  totalPoints?: string;
+  modelId?: string;
+}
+
+export function buildAssessmentPrompt({
+  sources,
+  sections,
+  instructions,
+  standards,
+  learnerContext,
+  topic,
+  assessmentType,
+  numberOfItems,
+  itemTypes,
+  difficultyLevel,
+  timeLimit,
+  totalPoints,
+}: AssessmentArgs): string {
+  const topicBlock = topic
+    ? `\n## LESSON TOPIC\n"""\n${topic}\n"""\nThis is the specific content the assessment covers.\n`
+    : "";
+
+  const sourceSection =
+    sources.length > 0
+      ? `## SOURCES\n${sourceBlock(sources)}\n`
+      : `## SOURCES\nNo reference materials uploaded. Use your training knowledge of Philippine DepEd curriculum and assessment design.\n`;
+
+  const assessmentDetails = `
+## ASSESSMENT SPECIFICATIONS
+- Assessment Type: ${assessmentType || "formative"}
+- Number of Items: ${numberOfItems || "10"}
+- Item Types: ${itemTypes?.join(", ") || "Multiple Choice, True/False"}
+- Difficulty Level: ${difficultyLevel || "Average (mixed difficulty)"}
+- Time Limit: ${timeLimit || "No time limit"}
+- Total Points: ${totalPoints || "Not specified"}
+`;
+
+  return `${topicBlock}${standardsBlock(standards)}${learnerContextBlock(learnerContext)}${assessmentDetails}${sourceSection}
+## ASSESSMENT TEMPLATE SECTIONS
+${sections.map((s) => `<${s.id}> ${s.title}\nGuidance: ${s.guidance}`).join("\n")}
+
+## TASK
+Generate a complete assessment based on the specifications above.
+- Write content for EVERY section listed above.
+- sectionId must be exactly the id in angle brackets (e.g. assessment-1).
+- title should normally match the template title.
+- content: the fully written section (plain text, "- " bullets and numbered lists allowed).
+- sourceRefs: list which sources you actually used, e.g. ["S1","S2"]. Use [] only if none apply.
+- For the Assessment Items section: generate the exact number of items specified, using the item types requested.
+- For the Answer Key: include correct answers and brief explanations.
+- For the Scoring Rubric: create a practical rubric for essay/performance tasks.
+
+Return ONLY valid JSON: {"sections":[{"sectionId":"...","title":"...","content":"...","sourceRefs":[...]},...]}${
+    instructions ? `\n\nADDITIONAL TEACHER INSTRUCTIONS (highest priority):\n${instructions}` : ""
+  }`;
+}
+
+interface GenerateAssessmentResult {
+  sections: import("./types").AssessmentSection[];
+}
+
+export async function generateAssessment({
+  sources,
+  sections,
+  instructions,
+  standards,
+  learnerContext,
+  topic,
+  assessmentType,
+  numberOfItems,
+  itemTypes,
+  difficultyLevel,
+  timeLimit,
+  totalPoints,
+  modelId = DEFAULT_MODEL_ID,
+}: AssessmentArgs): Promise<GenerateAssessmentResult> {
+  const refs = refIds(sources);
+  const prompt = buildAssessmentPrompt({
+    sources,
+    sections,
+    instructions,
+    standards,
+    learnerContext,
+    topic,
+    assessmentType,
+    numberOfItems,
+    itemTypes,
+    difficultyLevel,
+    timeLimit,
+    totalPoints,
+  });
+
+  const data = (await callModel(modelId, prompt)) as {
+    sections?: Array<{
+      sectionId?: unknown;
+      title?: unknown;
+      content?: unknown;
+      sourceRefs?: unknown;
+    }>;
+  };
+
+  const byId = new Map<string, import("./types").AssessmentSection>();
+  for (const s of data.sections ?? []) {
+    if (
+      typeof s.sectionId === "string" &&
+      typeof s.content === "string" &&
+      !byId.has(s.sectionId)
+    ) {
+      byId.set(s.sectionId, {
+        sectionId: s.sectionId,
+        title:
+          typeof s.title === "string" && s.title.trim()
+            ? s.title.trim()
+            : sections.find((t) => t.id === s.sectionId)?.title ?? s.sectionId,
+        content: s.content.trim(),
+        sourceRefs: sanitizeRefs(s.sourceRefs, refs),
+      });
+    }
+  }
+
+  const result: import("./types").AssessmentSection[] = [];
+  for (const section of sections) {
+    const existing = byId.get(section.id);
+    if (existing && existing.content.length > 0) {
+      result.push(existing);
+    }
+  }
+
+  return { sections: result };
+}

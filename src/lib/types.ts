@@ -69,6 +69,33 @@ export interface NotebookDetails {
   notedByPosition?: string;
 }
 
+export type AssessmentType = "formative" | "summative" | "diagnostic" | "performance";
+
+export interface AssessmentDetails {
+  assessmentType?: AssessmentType;
+  numberOfItems?: string;
+  itemTypes?: string[];
+  difficultyLevel?: string;
+  timeLimit?: string;
+  totalPoints?: string;
+  specialInstructions?: string;
+}
+
+export interface AssessmentSection {
+  sectionId: string;
+  title: string;
+  content: string;
+  sourceRefs: string[];
+  approvedAt?: string;
+}
+
+export interface AssessmentResult {
+  generatedAt: string;
+  instructions?: string;
+  details?: AssessmentDetails;
+  sections: AssessmentSection[];
+}
+
 export interface Notebook {
   id: string;
   title: string;
@@ -78,6 +105,8 @@ export interface Notebook {
   template: TemplateInfo | null;
   details?: NotebookDetails;
   result: PlanResult | null;
+  assessment?: AssessmentDetails;
+  assessmentResult: AssessmentResult | null;
   sourceWarning?: string;
 }
 

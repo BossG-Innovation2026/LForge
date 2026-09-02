@@ -66,6 +66,7 @@ export async function createNotebook(title: string): Promise<Notebook> {
     },
     details: {},
     result: null,
+    assessmentResult: null,
   };
   await saveNotebook(notebook);
   return notebook;

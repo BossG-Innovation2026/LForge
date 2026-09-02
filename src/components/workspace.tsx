@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import type { Notebook, NotebookDetails, SourceKind } from "@/lib/types";
+import type { Notebook, NotebookDetails, SourceKind, AssessmentDetails, AssessmentType } from "@/lib/types";
 import { extractText, SOURCE_ACCEPT } from "@/lib/client-extract";
 import { AI_MODELS, DEFAULT_MODEL_ID, getProviderLabel, type AIModel } from "@/lib/ai-providers";
 import SmolderButton from "@/components/smolder-button";
@@ -364,6 +364,14 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   });
   const [activeView, setActiveView] = useState<"plan" | "assessment">("plan");
 
+  // Assessment state
+  const [assessmentDetails, setAssessmentDetails] = useState<AssessmentDetails>(() => {
+    const base = nb.assessment ?? {};
+    return base;
+  });
+  const [assessmentBusy, setAssessmentBusy] = useState(false);
+  const [assessmentInstructions, setAssessmentInstructions] = useState("");
+
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
       cache: "no-store",
@@ -682,6 +690,39 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
       fail(err);
     } finally {
       setSectionBusy(null);
+    }
+  }
+
+  async function generateAssessment() {
+    if (nb.assessmentResult?.sections && nb.assessmentResult.sections.length > 0) {
+      if (!confirm("Regenerating will replace the existing assessment. Continue?")) {
+        return;
+      }
+    }
+    setAssessmentBusy(true);
+    setError(null);
+    try {
+      const data = await apiCall<{ notebook: Notebook }>("/api/generate-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notebookId: nb.id,
+          instructions: assessmentInstructions,
+          modelId: selectedModel,
+          assessmentType: assessmentDetails.assessmentType,
+          numberOfItems: assessmentDetails.numberOfItems,
+          itemTypes: assessmentDetails.itemTypes,
+          difficultyLevel: assessmentDetails.difficultyLevel,
+          timeLimit: assessmentDetails.timeLimit,
+          totalPoints: assessmentDetails.totalPoints,
+        }),
+      });
+      setNb(data.notebook);
+      setAssessmentDetails(data.notebook.assessment ?? {});
+    } catch (err) {
+      fail(err);
+    } finally {
+      setAssessmentBusy(false);
     }
   }
 
@@ -1638,17 +1679,233 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           )}
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-32">
-              <span className="font-mono text-3xl font-bold uppercase tracking-wider" style={{
-                background: "linear-gradient(180deg, #fff5eb 0%, #ffcc66 25%, #ff6a00 55%, #cc3300 80%, #991a00 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                filter: "drop-shadow(0 0 8px rgba(255,106,0,0.6)) drop-shadow(0 0 20px rgba(255,60,0,0.3))",
-              }}>
-                Forging Soon
-              </span>
-              <p className="mt-3 font-mono text-xs text-zinc-500 uppercase tracking-wider">Assessment generation is under development</p>
+            <div className="space-y-6">
+              {/* Assessment Header */}
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="font-mono text-lg font-bold uppercase tracking-wider" style={{ color: "var(--lf-accent)" }}>
+                  Assessment Generator
+                </h2>
+                {nb.assessmentResult && (
+                  <SmolderButton
+                    variant="forge"
+                    onClick={() => {/* TODO: Export assessment */}}
+                    disabled={assessmentBusy}
+                    className="shrink-0 rounded-none px-4 py-2 font-mono text-sm font-semibold uppercase tracking-wider"
+                  >
+                    Export Assessment
+                  </SmolderButton>
+                )}
+              </div>
+
+              {/* Assessment Form */}
+              <div className="lf-panel p-4 space-y-4">
+                <SectionHeading>Assessment Settings</SectionHeading>
+
+                {/* Assessment Type */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Assessment Type <span aria-hidden="true">*</span>
+                    </span>
+                    <select
+                      value={assessmentDetails.assessmentType ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, assessmentType: e.target.value as AssessmentType }))}
+                      className="lf-input w-full"
+                    >
+                      <option value="">Select type...</option>
+                      <option value="formative">Formative Assessment</option>
+                      <option value="summative">Summative Assessment</option>
+                      <option value="diagnostic">Diagnostic Assessment</option>
+                      <option value="performance">Performance Task</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Number of Items */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Number of Items
+                    </span>
+                    <input
+                      type="number"
+                      value={assessmentDetails.numberOfItems ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, numberOfItems: e.target.value }))}
+                      placeholder="e.g. 10"
+                      min="1"
+                      max="50"
+                      className="lf-input w-full"
+                    />
+                  </label>
+                </div>
+
+                {/* Item Types */}
+                <div>
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Item Types
+                  </span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {["Multiple Choice", "True/False", "Essay", "Matching", "Performance Task", "Fill in the Blank"].map((type) => (
+                      <label key={type} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={assessmentDetails.itemTypes?.includes(type) ?? false}
+                          onChange={(e) => {
+                            const current = assessmentDetails.itemTypes ?? [];
+                            if (e.target.checked) {
+                              setAssessmentDetails((d) => ({ ...d, itemTypes: [...current, type] }));
+                            } else {
+                              setAssessmentDetails((d) => ({ ...d, itemTypes: current.filter((t) => t !== type) }));
+                            }
+                          }}
+                          className="accent-[var(--lf-accent)]"
+                        />
+                        <span className="font-mono text-[11px] text-zinc-300">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Difficulty Level */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Difficulty Level
+                    </span>
+                    <select
+                      value={assessmentDetails.difficultyLevel ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, difficultyLevel: e.target.value }))}
+                      className="lf-input w-full"
+                    >
+                      <option value="">Select difficulty...</option>
+                      <option value="easy">Easy</option>
+                      <option value="average">Average (Mixed)</option>
+                      <option value="difficult">Difficult</option>
+                      <option value="blooms">Bloom&apos;s Taxonomy Levels</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Time Limit */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block">
+                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                        Time Limit (minutes)
+                      </span>
+                      <input
+                        type="number"
+                        value={assessmentDetails.timeLimit ?? ""}
+                        onChange={(e) => setAssessmentDetails((d) => ({ ...d, timeLimit: e.target.value }))}
+                        placeholder="e.g. 30"
+                        min="0"
+                        className="lf-input w-full"
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block">
+                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                        Total Points
+                      </span>
+                      <input
+                        type="number"
+                        value={assessmentDetails.totalPoints ?? ""}
+                        onChange={(e) => setAssessmentDetails((d) => ({ ...d, totalPoints: e.target.value }))}
+                        placeholder="e.g. 100"
+                        min="0"
+                        className="lf-input w-full"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Special Instructions */}
+                <div>
+                  <label className="block">
+                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                      Special Instructions
+                    </span>
+                    <textarea
+                      value={assessmentDetails.specialInstructions ?? ""}
+                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, specialInstructions: e.target.value }))}
+                      rows={2}
+                      maxLength={2000}
+                      placeholder="Any specific requirements or modifications..."
+                      className="lf-input resize-none w-full"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Instructions Input */}
+              <div className="lf-panel lf-frame p-4">
+                <textarea
+                  value={assessmentInstructions}
+                  onChange={(e) => setAssessmentInstructions(e.target.value)}
+                  rows={2}
+                  maxLength={4000}
+                  placeholder="Additional instructions for the AI (e.g., focus on specific topics, include diagrams, etc.)"
+                  className="lf-input resize-none px-3 py-2 !text-sm"
+                />
+              </div>
+
+              {/* Generate Button */}
+              <SmolderButton
+                variant="forge"
+                onClick={generateAssessment}
+                disabled={!assessmentDetails.assessmentType || assessmentBusy}
+                className="w-full rounded-none px-6 py-4 font-mono text-base font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
+              >
+                {assessmentBusy ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Spinner className="h-4 w-4" /> Forging Assessment...
+                  </span>
+                ) : (
+                  "GENERATE ASSESSMENT"
+                )}
+              </SmolderButton>
+
+              {/* Assessment Result */}
+              {nb.assessmentResult && nb.assessmentResult.sections.length > 0 && (
+                <div className="space-y-4 pb-16">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-mono text-xs tracking-wide text-zinc-500">
+                      Generated {new Date(nb.assessmentResult.generatedAt).toLocaleString()}
+                      {nb.assessmentResult.details?.assessmentType && (
+                        <span className="ml-2 uppercase">({nb.assessmentResult.details.assessmentType})</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Assessment Sections */}
+                  {nb.assessmentResult.sections.map((section) => (
+                    <article
+                      key={section.sectionId}
+                      className="lf-panel lf-frame space-y-3 p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <SectionHeading>{section.title}</SectionHeading>
+                      </div>
+                      <ContentBody content={section.content} />
+                      {section.sourceRefs.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 90%)" }}>
+                          {section.sourceRefs.map((ref) => (
+                            <span
+                              key={ref}
+                              title={refName(ref)}
+                              className="border px-1.5 py-0.5 font-mono text-[10px] uppercase text-emerald-300/70"
+                              style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 80%)", backgroundColor: "color-mix(in srgb, var(--lf-accent), transparent 95%)" }}
+                            >
+                              [{ref}] {refName(ref)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
