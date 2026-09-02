@@ -378,6 +378,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [assessmentEditText, setAssessmentEditText] = useState("");
   const [assessmentFeedbackFor, setAssessmentFeedbackFor] = useState<string | null>(null);
   const [assessmentFeedbackText, setAssessmentFeedbackText] = useState("");
+  const [assessmentConfigSaved, setAssessmentConfigSaved] = useState(false);
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -700,6 +701,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
     }
   }
 
+  async function saveAssessmentConfig() {
+    setAssessmentConfigSaved(true);
+    setTimeout(() => setAssessmentConfigSaved(false), 2000);
+  }
+
   async function generateAssessment() {
     if (nb.assessmentResult?.sections && nb.assessmentResult.sections.length > 0) {
       if (!confirm("Regenerating will replace the existing assessment. Continue?")) {
@@ -718,12 +724,9 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           modelId: selectedModel,
           competency: assessmentCompetency,
           topic: assessmentTopic,
-          assessmentType: assessmentDetails.assessmentType,
           numberOfItems: assessmentDetails.numberOfItems,
           itemTypes: assessmentDetails.itemTypes,
           difficultyLevel: assessmentDetails.difficultyLevel,
-          timeLimit: assessmentDetails.timeLimit,
-          totalPoints: assessmentDetails.totalPoints,
         }),
       });
       setNb(data.notebook);
@@ -750,12 +753,6 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           competency: assessmentCompetency,
           topic: assessmentTopic,
           modelId: selectedModel,
-          assessmentType: assessmentDetails.assessmentType,
-          numberOfItems: assessmentDetails.numberOfItems,
-          itemTypes: assessmentDetails.itemTypes,
-          difficultyLevel: assessmentDetails.difficultyLevel,
-          timeLimit: assessmentDetails.timeLimit,
-          totalPoints: assessmentDetails.totalPoints,
         }),
       });
       setNb(data.notebook);
@@ -1172,6 +1169,92 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 ) : (
                   "YOU STRIKE, I'LL FORGE IT !!!"
                 )}
+              </SmolderButton>
+            </div>
+          </section>
+        )}
+
+        {/* Assessment Configuration - shows when assessment tab is active */}
+        {activeView === "assessment" && (
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <SectionHeading>Assessment Configuration</SectionHeading>
+              {assessmentConfigSaved && (
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--lf-accent)]">Saved!</span>
+              )}
+            </div>
+            <div className="lf-panel space-y-3 p-3">
+              {/* Number of Items */}
+              <div>
+                <label className="block">
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Number of Items
+                  </span>
+                  <input
+                    type="number"
+                    value={assessmentDetails.numberOfItems ?? ""}
+                    onChange={(e) => setAssessmentDetails((d) => ({ ...d, numberOfItems: e.target.value }))}
+                    placeholder="e.g. 10"
+                    min="1"
+                    max="50"
+                    className="lf-input w-full"
+                  />
+                </label>
+              </div>
+
+              {/* Item Types */}
+              <div>
+                <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                  Item Types
+                </span>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {["Multiple Choice", "True/False", "Essay", "Matching", "Performance Task", "Fill in the Blank"].map((type) => (
+                    <label key={type} className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={assessmentDetails.itemTypes?.includes(type) ?? false}
+                        onChange={(e) => {
+                          const current = assessmentDetails.itemTypes ?? [];
+                          if (e.target.checked) {
+                            setAssessmentDetails((d) => ({ ...d, itemTypes: [...current, type] }));
+                          } else {
+                            setAssessmentDetails((d) => ({ ...d, itemTypes: current.filter((t) => t !== type) }));
+                          }
+                        }}
+                        className="accent-[var(--lf-accent)]"
+                      />
+                      <span className="font-mono text-[10px] text-zinc-300">{type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Difficulty Level */}
+              <div>
+                <label className="block">
+                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
+                    Difficulty Level
+                  </span>
+                  <select
+                    value={assessmentDetails.difficultyLevel ?? ""}
+                    onChange={(e) => setAssessmentDetails((d) => ({ ...d, difficultyLevel: e.target.value }))}
+                    className="lf-input w-full"
+                  >
+                    <option value="">Select difficulty...</option>
+                    <option value="easy">Easy</option>
+                    <option value="average">Average (Mixed)</option>
+                    <option value="difficult">Difficult</option>
+                    <option value="blooms">Bloom&apos;s Taxonomy Levels</option>
+                  </select>
+                </label>
+              </div>
+
+              <SmolderButton
+                variant="forge"
+                onClick={saveAssessmentConfig}
+                className="w-full rounded-none px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wider"
+              >
+                Save Configuration
               </SmolderButton>
             </div>
           </section>
@@ -1839,134 +1922,12 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
 
                 <div className="border-t pt-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>
-                <SectionHeading>Assessment Configuration</SectionHeading>
-                </div>
-
-                {/* Assessment Type */}
-                <div>
-                  <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                      Assessment Type <span aria-hidden="true">*</span>
-                    </span>
-                    <select
-                      value={assessmentDetails.assessmentType ?? ""}
-                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, assessmentType: e.target.value as AssessmentType }))}
-                      className="lf-input w-full"
-                    >
-                      <option value="">Select type...</option>
-                      <option value="formative">Formative Assessment</option>
-                      <option value="summative">Summative Assessment</option>
-                      <option value="diagnostic">Diagnostic Assessment</option>
-                      <option value="performance">Performance Task</option>
-                    </select>
-                  </label>
-                </div>
-
-                {/* Number of Items */}
-                <div>
-                  <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                      Number of Items
-                    </span>
-                    <input
-                      type="number"
-                      value={assessmentDetails.numberOfItems ?? ""}
-                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, numberOfItems: e.target.value }))}
-                      placeholder="e.g. 10"
-                      min="1"
-                      max="50"
-                      className="lf-input w-full"
-                    />
-                  </label>
-                </div>
-
-                {/* Item Types */}
-                <div>
-                  <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                    Item Types
-                  </span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {["Multiple Choice", "True/False", "Essay", "Matching", "Performance Task", "Fill in the Blank"].map((type) => (
-                      <label key={type} className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={assessmentDetails.itemTypes?.includes(type) ?? false}
-                          onChange={(e) => {
-                            const current = assessmentDetails.itemTypes ?? [];
-                            if (e.target.checked) {
-                              setAssessmentDetails((d) => ({ ...d, itemTypes: [...current, type] }));
-                            } else {
-                              setAssessmentDetails((d) => ({ ...d, itemTypes: current.filter((t) => t !== type) }));
-                            }
-                          }}
-                          className="accent-[var(--lf-accent)]"
-                        />
-                        <span className="font-mono text-[11px] text-zinc-300">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Difficulty Level */}
-                <div>
-                  <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                      Difficulty Level
-                    </span>
-                    <select
-                      value={assessmentDetails.difficultyLevel ?? ""}
-                      onChange={(e) => setAssessmentDetails((d) => ({ ...d, difficultyLevel: e.target.value }))}
-                      className="lf-input w-full"
-                    >
-                      <option value="">Select difficulty...</option>
-                      <option value="easy">Easy</option>
-                      <option value="average">Average (Mixed)</option>
-                      <option value="difficult">Difficult</option>
-                      <option value="blooms">Bloom&apos;s Taxonomy Levels</option>
-                    </select>
-                  </label>
-                </div>
-
-                {/* Time Limit */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block">
-                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                        Time Limit (minutes)
-                      </span>
-                      <input
-                        type="number"
-                        value={assessmentDetails.timeLimit ?? ""}
-                        onChange={(e) => setAssessmentDetails((d) => ({ ...d, timeLimit: e.target.value }))}
-                        placeholder="e.g. 30"
-                        min="0"
-                        className="lf-input w-full"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block">
-                      <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                        Total Points
-                      </span>
-                      <input
-                        type="number"
-                        value={assessmentDetails.totalPoints ?? ""}
-                        onChange={(e) => setAssessmentDetails((d) => ({ ...d, totalPoints: e.target.value }))}
-                        placeholder="e.g. 100"
-                        min="0"
-                        className="lf-input w-full"
-                      />
-                    </label>
-                  </div>
+                <SectionHeading>Special Instructions</SectionHeading>
                 </div>
 
                 {/* Special Instructions */}
                 <div>
                   <label className="block">
-                    <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
-                      Special Instructions
-                    </span>
                     <textarea
                       value={assessmentDetails.specialInstructions ?? ""}
                       onChange={(e) => setAssessmentDetails((d) => ({ ...d, specialInstructions: e.target.value }))}
@@ -1979,23 +1940,11 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                 </div>
               </div>
 
-              {/* Instructions Input */}
-              <div className="lf-panel lf-frame p-4">
-                <textarea
-                  value={assessmentInstructions}
-                  onChange={(e) => setAssessmentInstructions(e.target.value)}
-                  rows={2}
-                  maxLength={4000}
-                  placeholder="Additional instructions for the AI (e.g., focus on specific topics, include diagrams, etc.)"
-                  className="lf-input resize-none px-3 py-2 !text-sm"
-                />
-              </div>
-
               {/* Generate Button */}
               <SmolderButton
                 variant="forge"
                 onClick={generateAssessment}
-                disabled={!assessmentDetails.assessmentType || assessmentBusy}
+                disabled={!assessmentCompetency.trim() || !assessmentTopic.trim() || assessmentBusy}
                 className="w-full rounded-none px-6 py-4 font-mono text-base font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:shadow-none disabled:opacity-30"
               >
                 {assessmentBusy ? (
