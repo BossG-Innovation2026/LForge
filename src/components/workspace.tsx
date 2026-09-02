@@ -1901,7 +1901,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     disabled={assessmentBusy}
                     className="shrink-0 rounded-none px-4 py-2 font-mono text-sm font-semibold uppercase tracking-wider"
                   >
-                    Export Assessment
+                    GOTCHA
                   </SmolderButton>
                 )}
               </div>
@@ -2058,7 +2058,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     <Spinner className="h-4 w-4" /> Forging Assessment...
                   </span>
                 ) : (
-                  "GENERATE ASSESSMENT"
+                  "STRIKE IT NOW!"
                 )}
               </SmolderButton>
               )}
