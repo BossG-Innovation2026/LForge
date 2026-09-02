@@ -72,6 +72,8 @@ export interface NotebookDetails {
 export type AssessmentType = "formative" | "summative" | "diagnostic" | "performance";
 
 export interface AssessmentDetails {
+  competency?: string;
+  topic?: string;
   assessmentType?: AssessmentType;
   numberOfItems?: string;
   itemTypes?: string[];

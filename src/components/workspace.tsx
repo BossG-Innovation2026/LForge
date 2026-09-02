@@ -371,6 +371,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   });
   const [assessmentBusy, setAssessmentBusy] = useState(false);
   const [assessmentInstructions, setAssessmentInstructions] = useState("");
+  const [assessmentCompetency, setAssessmentCompetency] = useState(nb.assessment?.competency ?? details.competency ?? "");
+  const [assessmentTopic, setAssessmentTopic] = useState(nb.assessment?.topic ?? details.contentStandard ?? "");
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -709,6 +711,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
           notebookId: nb.id,
           instructions: assessmentInstructions,
           modelId: selectedModel,
+          competency: assessmentCompetency,
+          topic: assessmentTopic,
           assessmentType: assessmentDetails.assessmentType,
           numberOfItems: assessmentDetails.numberOfItems,
           itemTypes: assessmentDetails.itemTypes,
@@ -1699,40 +1703,40 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
 
               {/* Assessment Form */}
               <div className="lf-panel p-4 space-y-4">
-                <SectionHeading>Assessment Settings</SectionHeading>
+                <SectionHeading>Assessment Content</SectionHeading>
 
-                {/* Learning Competency - auto-filled from lesson details */}
+                {/* Learning Competency - independent */}
                 <div>
                   <label className="block">
                     <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
                       Learning Competency &amp; Curriculum Standards <span aria-hidden="true">*</span>
                     </span>
                     <textarea
-                      value={details.competency ?? ""}
+                      value={assessmentCompetency}
+                      onChange={(e) => setAssessmentCompetency(e.target.value)}
                       rows={3}
-                      readOnly
-                      className="lf-input resize-none w-full opacity-70 cursor-not-allowed"
-                      placeholder="Auto-filled from Lesson Details"
+                      maxLength={2000}
+                      placeholder="Write the competency/ies from the curriculum guide..."
+                      className="lf-input resize-none w-full"
                     />
                   </label>
-                  <p className="mt-1 font-mono text-[10px] text-zinc-500">From Lesson Details (read-only)</p>
                 </div>
 
-                {/* Content / Topic - auto-filled from lesson details */}
+                {/* Content / Topic - independent */}
                 <div>
                   <label className="block">
                     <span className="mb-0.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--lf-accent)]">
                       Content / Topic <span aria-hidden="true">*</span>
                     </span>
                     <textarea
-                      value={details.contentStandard ?? ""}
+                      value={assessmentTopic}
+                      onChange={(e) => setAssessmentTopic(e.target.value)}
                       rows={2}
-                      readOnly
-                      className="lf-input resize-none w-full opacity-70 cursor-not-allowed"
-                      placeholder="Auto-filled from Lesson Details"
+                      maxLength={1000}
+                      placeholder="Write the specific content/topic to assess..."
+                      className="lf-input resize-none w-full"
                     />
                   </label>
-                  <p className="mt-1 font-mono text-[10px] text-zinc-500">From Lesson Details (read-only)</p>
                 </div>
 
                 <div className="border-t pt-4" style={{ borderColor: "color-mix(in srgb, var(--lf-accent), transparent 85%)" }}>

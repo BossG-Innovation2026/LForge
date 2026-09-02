@@ -12,6 +12,8 @@ interface GenerateAssessmentBody {
   notebookId?: string;
   instructions?: string;
   modelId?: string;
+  competency?: string;
+  topic?: string;
   assessmentType?: string;
   numberOfItems?: string;
   itemTypes?: string[];
@@ -33,20 +35,19 @@ export async function POST(request: NextRequest) {
     }
 
     const instructions = body.instructions?.trim().slice(0, 4000) || undefined;
-    const standards = notebook.details?.competency?.trim() || undefined;
-    const learnerContext = notebook.details?.learnerContext?.trim() || undefined;
-    const topic = notebook.details?.contentStandard?.trim() || undefined;
+    const standards = body.competency?.trim() || undefined;
+    const topic = body.topic?.trim() || undefined;
 
     if (!standards) {
       return NextResponse.json(
-        { error: "Set the Learning Competency & Curriculum Standards in Lesson details first." },
+        { error: "Enter the Learning Competency & Curriculum Standards for the assessment." },
         { status: 400 }
       );
     }
 
     if (!topic) {
       return NextResponse.json(
-        { error: "Set the Content / Topic in Lesson details first." },
+        { error: "Enter the Content / Topic for the assessment." },
         { status: 400 }
       );
     }
@@ -61,7 +62,6 @@ export async function POST(request: NextRequest) {
       sections: assessmentSections,
       instructions,
       standards,
-      learnerContext,
       topic,
       assessmentType: body.assessmentType,
       numberOfItems: body.numberOfItems,
@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
       generatedAt: now,
       instructions,
       details: {
+        competency: standards,
+        topic,
         assessmentType: body.assessmentType as "formative" | "summative" | "diagnostic" | "performance",
         numberOfItems: body.numberOfItems,
         itemTypes: body.itemTypes,
