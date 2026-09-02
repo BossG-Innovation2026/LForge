@@ -46,7 +46,7 @@ export const ASSESSMENT_END_SECTIONS: AssessmentTemplateSection[] = [
 export function officialAssessmentTemplateSections(numberOfItems: number = 10): TemplateSection[] {
   const sections: TemplateSection[] = [];
 
-  // Add individual item sections
+  // Add individual item sections only
   for (let i = 1; i <= numberOfItems; i++) {
     sections.push({
       id: `assessment-item-${i}`,
@@ -54,16 +54,6 @@ export function officialAssessmentTemplateSections(numberOfItems: number = 10): 
       guidance: ASSESSMENT_ITEM_SECTION.guidance,
     });
   }
-
-  // Add end sections (answer key, rubric, administration guide)
-  const endOffset = numberOfItems + 1;
-  ASSESSMENT_END_SECTIONS.forEach((section, idx) => {
-    sections.push({
-      id: `assessment-${endOffset + idx}`,
-      title: section.title,
-      guidance: section.guidance,
-    });
-  });
 
   return sections;
 }
