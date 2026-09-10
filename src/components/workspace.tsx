@@ -379,6 +379,7 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
   const [assessmentFeedbackFor, setAssessmentFeedbackFor] = useState<string | null>(null);
   const [assessmentFeedbackText, setAssessmentFeedbackText] = useState("");
   const [assessmentConfigSaved, setAssessmentConfigSaved] = useState(false);
+  const [assessmentRevealed, setAssessmentRevealed] = useState(false);
 
   async function reload(): Promise<void> {
     const data = await apiCall<{ notebook: Notebook }>(`/api/notebooks/${nb.id}`, {
@@ -1889,6 +1890,18 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
             </>
           ) : (
             <div className="space-y-6">
+              {!assessmentRevealed ? (
+                <div className="flex items-center justify-center py-32">
+                  <SmolderButton
+                    variant="forge"
+                    onClick={() => setAssessmentRevealed(true)}
+                    className="rounded-none px-8 py-6 font-mono text-lg font-bold uppercase tracking-widest"
+                  >
+                    Forging Soon
+                  </SmolderButton>
+                </div>
+              ) : (
+              <>
               {/* Assessment Header */}
               <div className="flex items-start justify-between gap-4">
                 <h2 className="font-mono text-lg font-bold uppercase tracking-wider" style={{ color: "var(--lf-accent)" }}>
@@ -2262,6 +2275,8 @@ export default function Workspace({ initialNotebook }: { initialNotebook: Notebo
                     );
                   })}
                 </div>
+              )}
+              </>
               )}
             </div>
           )}
