@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/stats`, { cache: "no-store" });
-  const stats: { plans: number; assessments: number } = res.ok ? await res.json() : { plans: 0, assessments: 0 };
+  const stats = res.ok ? await res.json() : { plans: 0, assessments: 0 };
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-16 flex flex-col items-center justify-center">
       <header className="mb-10 text-center">
